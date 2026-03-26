@@ -1,0 +1,7 @@
+tunnel: smshub
+credentials-file: .cloudflare/c09b0389-4359-437e-9265-d98ccfb068ed.json
+
+ingress:
+  - hostname: smshub.irysup.xyz
+    service: http://localhost:3005
+  - service: http_status:404

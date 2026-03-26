@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamBOSS | YouTube Shorts Automation</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <i data-lucide="zap"></i>
+            <span>StreamBOSS</span>
+        </div>
+        <nav class="nav-group">
+            <a href="#" class="nav-item active" data-tab="dashboard">
+                <i data-lucide="layout-dashboard"></i> Dashboard
+            </a>
+            <a href="#" class="nav-item" data-tab="channels">
+                <i data-lucide="tv"></i> Channels
+            </a>
+            <a href="#" class="nav-item" data-tab="automation">
+                <i data-lucide="box"></i> Automation
+            </a>
+            <a href="#" class="nav-item" data-tab="settings">
+                <i data-lucide="settings"></i> AI Settings
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="resource-monitor">
+                <span>CPU Usage (<span id="cpu-load">0</span>%)</span>
+                <div class="progress-bar"><div class="progress-fill" id="cpu-fill" style="width: 0%;"></div></div>
+            </div>
+            <div class="resource-monitor">
+                <span>RAM Usage (<span id="ram-load">0</span>%)</span>
+                <div class="progress-bar"><div class="progress-fill" id="ram-fill" style="width: 0%; background: var(--purple);"></div></div>
+            </div>
+            <div class="resource-monitor">
+                <span id="disk-label">Storage (0 GB / 0 GB)</span>
+                <div class="progress-bar"><div class="progress-fill" id="disk-fill" style="width: 0%; background: var(--green);"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Dashboard View (Overview) -->
+        <section id="dashboard" class="tab-content active">
+            <header>
+                <div>
+                    <h1>System Overview</h1>
+                    <p>Global summary of your automation network.</p>
+                </div>
+            </header>
+
+            <div class="stats-overview">
+                <div class="stat-card card">
+                    <span class="label">Total Channels</span>
+                    <b id="stat-total-channels">0</b>
+                </div>
+                <div class="stat-card card">
+                    <span class="label">Total Subscribers</span>
+                    <b id="stat-total-subs">0</b>
+                </div>
+                <div class="stat-card card">
+                    <span class="label">Active Jobs</span>
+                    <b id="stat-active-jobs">0</b>
+                </div>
+                <div class="stat-card card">
+                    <span class="label">Successful Uploads</span>
+                    <b id="stat-success-uploads">0</b>
+                </div>
+            </div>
+        </section>
+
+        <!-- Channels View (The Account List) -->
+        <section id="channels" class="tab-content">
+            <header>
+                <div>
+                    <h1>Manage Channels</h1>
+                    <p>Click a channel to manage its assets and schedules.</p>
+                </div>
+                <button class="btn primary" id="btn-add-channel-top">
+                    <i data-lucide="plus"></i> Create Channel
+                </button>
+            </header>
+
+            <div class="channels-grid" id="channels-grid">
+                <!-- Channel Cards injected here -->
+            </div>
+        </section>
+
+        <!-- Channel Manage View (The Overhaul) -->
+        <section id="channel-manage" class="tab-content">
+            <header>
+                <div id="manage-channel-header">
+                    <h1 id="m-channel-title">Channel Name</h1>
+                    <p id="m-channel-desc" class="small text-muted">No description provided.</p>
+                    <a href="#" id="m-channel-link" target="_blank" class="link small">View on YouTube</a>
+                </div>
+                <div style="display: flex; gap:12px;">
+                    <button class="btn secondary" id="btn-back-dashboard">
+                        <i data-lucide="arrow-left"></i> Back to Channels
+                    </button>
+                </div>
+            </header>
+
+            <!-- Tabs Navigation -->
+            <div class="channel-tabs">
+                <button class="tab-btn active" data-target="media-videos">Videos</button>
+                <button class="tab-btn" data-target="media-audios">Audios</button>
+                <button class="tab-btn" data-target="media-images">Thumbnails</button>
+            </div>
+
+            <div class="manage-body">
+                <div class="left-panel">
+                    <div class="toolbar">
+                        <button class="btn primary" id="btn-upload-media">
+                            <i data-lucide="upload"></i> Upload Media
+                        </button>
+                    </div>
+
+                    <!-- Video Preview Area (Shorts) -->
+                    <div class="video-preview-card card">
+                        <span class="preview-label">VIDEO PREVIEW</span>
+                        <div id="preview-container" class="preview-box">
+                            <div class="no-preview">Select an item to preview</div>
+                        </div>
+                        <button class="btn-preview-toggle">Preview</button>
+                    </div>
+
+                    <!-- Media Gallery -->
+                    <div class="gallery-card card">
+                        <div class="gallery-header">
+                            <h3 id="gallery-title">Video Gallery</h3>
+                            <div class="search-box">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="media-search" placeholder="Search media...">
+                            </div>
+                        </div>
+                        <div id="media-grid" class="media-list-grid">
+                            <!-- Items injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <!-- Automation Settings for Batch -->
+                    <div class="automation-card card">
+                        <h3>Automation Batch</h3>
+                        <label>Niche Target</label>
+                        <input type="text" id="m-niche" placeholder="Gaming, Tech, Funny...">
+                        <label>Reference Title</label>
+                        <input type="text" id="m-ref-title" placeholder="Viral Hook Title">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <label>Target Country</label>
+                                <select id="m-country">
+                                    <option value="Global">Global (English)</option>
+                                    <option value="ID">Indonesia</option>
+                                    <option value="US">USA</option>
+                                    <option value="UK">United Kingdom</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Category</label>
+                                <select id="m-category">
+                                    <option value="22">People & Blogs</option>
+                                    <option value="24">Entertainment</option>
+                                    <option value="20">Gaming</option>
+                                    <option value="1">Film & Animation</option>
+                                    <option value="10">Music</option>
+                                    <option value="17">Sports</option>
+                                    <option value="26">Howto & Style</option>
+                                    <option value="28">Science & Technology</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <label>Upload Time (Daily)</label>
+                        <input type="time" id="m-time" value="10:00">
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <label>Start Date</label>
+                                <input type="date" id="m-start-date">
+                            </div>
+                            <div>
+                                <label>End Date</label>
+                                <input type="date" id="m-end-date">
+                            </div>
+                        </div>
+
+                        <button class="btn primary" id="btn-schedule-batch" style="width: 100%; margin-top: 12px;">Start Automation</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Automation View (Global Queue) -->
+        <section id="automation" class="tab-content">
+            <header>
+                <h1>Global Automation Monitor</h1>
+                <p>Track all pending and completed publishing jobs across all channels.</p>
+            </header>
+            <div class="card">
+                <div class="table-container">
+                    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <th style="padding: 12px;">Video</th>
+                                <th style="padding: 12px;">Niche</th>
+                                <th style="padding: 12px;">Status</th>
+                                <th style="padding: 12px;">Countdown</th>
+                                <th style="padding: 12px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="global-queue-table">
+                            <!-- Jobs injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Settings -->
+        <section id="settings" class="tab-content">
+            <header><h1>AI Configuration</h1></header>
+            <div class="card" style="max-width: 600px;">
+                <form id="settings-form">
+                    <label>Preferred Provider</label>
+                    <select id="s-provider">
+                        <option value="gemini">Google Gemini AI</option>
+                        <option value="groq">Groq AI</option>
+                    </select>
+                        <div id="gemini-input-group">
+                            <label>Gemini API Key</label>
+                            <input type="password" id="s-gemini-key">
+                        </div>
+                        <div id="groq-input-group" class="hidden">
+                            <label>Groq API Key</label>
+                            <input type="password" id="s-groq-key">
+                        </div>
+                    <button type="submit" class="btn primary">Save API Settings</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Add Channel Tab -->
+        <section id="add-channel" class="tab-content">
+            <header><h1>Register New Channel</h1></header>
+            <div class="card" style="max-width: 600px;">
+                <div style="margin-bottom: 24px;">
+                    <label>Import JSON Credentials</label>
+                    <input type="file" id="a-json-file" accept=".json">
+                </div>
+                <form id="add-channel-form">
+                    <label>Client ID</label>
+                    <input type="text" id="a-clientId" required>
+                    <label>Client Secret</label>
+                    <input type="password" id="a-clientSecret" required>
+                    <label>Refresh Token</label>
+                    <input type="password" id="a-refreshToken" required>
+                    <button type="submit" class="btn primary">Connect Channel</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Hidden file input for media upload -->
+    <input type="file" id="media-upload-hidden" multiple style="display:none">
+
+    <script src="script.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
