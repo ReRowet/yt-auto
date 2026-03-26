@@ -1,12 +1,17 @@
-const express = require('express');
-const path = require('path');
-const multer = require('multer');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-const os = require('os');
-const { readData, writeData } = require('./json-db');
-const { startScheduler } = require('./scheduler');
-const { getChannelInfo } = require('./youtube-uploader');
+import express from 'express';
+import path from 'path';
+import multer from 'multer';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import os from 'os';
+import { readData, writeData } from './json-db.js';
+import { startScheduler } from './scheduler.js';
+import { getChannelInfo } from './youtube-uploader.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 console.log('--- RE-Publis v2.8.0 System Health Booting ---');
 

@@ -1,8 +1,13 @@
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegStatic = require('ffmpeg-static');
-const ffprobeStatic = require('ffprobe-static');
-const path = require('path');
-const fs = require('fs');
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegStatic from 'ffmpeg-static';
+import ffprobeStatic from 'ffprobe-static';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Set FFmpeg and FFprobe paths
 ffmpeg.setFfmpegPath(ffmpegStatic);
@@ -133,7 +138,7 @@ const renderVideo = async (options) => {
     }
 };
 
-module.exports = {
+export {
     renderVideo,
     getDuration
 };

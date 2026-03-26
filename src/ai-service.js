@@ -1,6 +1,6 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const Groq = require('groq-sdk');
-const { readData } = require('./json-db');
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
+import { readData } from './json-db.js';
 
 /**
  * Unified AI Service for Gemini and Groq (v2 - Targeted)
@@ -139,4 +139,4 @@ Output format:
     }
 }
 
-module.exports = new AIService();
+export default new AIService();

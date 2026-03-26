@@ -1,6 +1,6 @@
-const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
+import { google } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Fetch Channel Metadata and Statistics
@@ -94,7 +94,7 @@ const uploadVideo = async (options) => {
     }
 };
 
-module.exports = {
+export {
     getChannelInfo,
     uploadVideo
 };

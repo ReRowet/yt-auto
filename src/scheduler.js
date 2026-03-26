@@ -1,10 +1,15 @@
-const cron = require('node-cron');
-const path = require('path');
-const fs = require('fs');
-const { readData, writeData } = require('./json-db');
-const { renderVideo } = require('./render-engine');
-const { uploadVideo } = require('./youtube-uploader');
-const aiService = require('./ai-service');
+import cron from 'node-cron';
+import path from 'path';
+import fs from 'fs';
+import { readData, writeData } from './json-db.js';
+import { renderVideo } from './render-engine.js';
+import { uploadVideo } from './youtube-uploader.js';
+import aiService from './ai-service.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Initialize and start the background scheduler (v2.0.0)
@@ -99,6 +104,6 @@ const startScheduler = () => {
     });
 };
 
-module.exports = {
+export {
     startScheduler
 };
