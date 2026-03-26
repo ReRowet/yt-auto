@@ -148,15 +148,17 @@
                 </div>
 
                 <div class="right-panel">
-                    <!-- Automation Settings for Batch -->
+                    <!-- Automation Workspace -->
                     <div class="automation-card card">
-                        <h3>Automation Batch</h3>
+                        <h3>Production Workspace</h3>
+                        
+                        <div class="section-title">Niche & Strategy</div>
                         <label>Niche Target</label>
                         <input type="text" id="m-niche" placeholder="Gaming, Tech, Funny...">
-                        <label>Reference Title</label>
+                        <label>Reference Title (Optional)</label>
                         <input type="text" id="m-ref-title" placeholder="Viral Hook Title">
                         
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="flex-group">
                             <div>
                                 <label>Target Country</label>
                                 <select id="m-country">
@@ -167,35 +169,72 @@
                                 </select>
                             </div>
                             <div>
-                                <label>Category</label>
+                                <label>YouTube Category</label>
                                 <select id="m-category">
                                     <option value="22">People & Blogs</option>
                                     <option value="24">Entertainment</option>
                                     <option value="20">Gaming</option>
                                     <option value="1">Film & Animation</option>
                                     <option value="10">Music</option>
-                                    <option value="17">Sports</option>
-                                    <option value="26">Howto & Style</option>
-                                    <option value="28">Science & Technology</option>
                                 </select>
                             </div>
                         </div>
 
-                        <label>Upload Time (Daily)</label>
-                        <input type="time" id="m-time" value="10:00">
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="section-title">Production Settings</div>
+                        <div class="flex-group">
                             <div>
-                                <label>Start Date</label>
-                                <input type="date" id="m-start-date">
+                                <label>Audio Mixed (Count)</label>
+                                <input type="number" id="m-audio-count" value="1" min="1" max="5">
                             </div>
-                            <div>
-                                <label>End Date</label>
-                                <input type="date" id="m-end-date">
+                            <div style="padding-top: 24px;">
+                                <div class="switch-group">
+                                    <span style="font-size: 13px;">Use Thumbnails</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="m-use-thumb" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
-                        <button class="btn primary" id="btn-schedule-batch" style="width: 100%; margin-top: 12px;">Start Automation</button>
+                        <div class="section-title">Schedule Settings</div>
+                        <div style="background: #0d1117; padding: 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Preferred Hours (Pool)</span>
+                                <button class="btn link small" onclick="openScheduleModal()">
+                                    <i data-lucide="settings-2" style="width: 14px;"></i> Edit Pool
+                                </button>
+                            </div>
+                            <div id="m-slot-preview" class="slot-list">
+                                <span class="slot-pill">10:00</span>
+                            </div>
+                        </div>
+
+                        <div class="flex-group">
+                            <div>
+                                <label>Videos Per Day</label>
+                                <select id="m-frequency" onchange="updateScheduleCalculations()">
+                                    <option value="1">1 Video / Day</option>
+                                    <option value="2">2 Videos / Day</option>
+                                    <option value="3" selected>3 Videos / Day</option>
+                                    <option value="4">4 Videos / Day</option>
+                                    <option value="5">5 Videos / Day</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Start Date</label>
+                                <input type="date" id="m-start-date" onchange="updateScheduleCalculations()">
+                            </div>
+                        </div>
+
+                        <div id="m-schedule-summary" style="background: rgba(44, 151, 222, 0.1); border-left: 3px solid var(--accent); padding: 12px; border-radius: 4px; font-size: 12px; margin-top: 8px;">
+                            <i data-lucide="calendar-days" style="width: 14px; margin-bottom: -2px;"></i>
+                            <span id="summary-text">Select videos to calculate schedule.</span>
+                        </div>
+
+                        <button class="btn primary" id="btn-schedule-batch" style="width: 100%; margin-top: 20px; justify-content: center; font-weight: 600;">
+                            <i data-lucide="zap"></i> Start Automation Batch
+                        </button>
                     </div>
                 </div>
             </div>
@@ -292,6 +331,40 @@
             </div>
         </section>
     </main>
+
+    <!-- Schedule Configuration Modal -->
+    <div id="schedule-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Configure Daily Slots</h3>
+                <button class="btn link" onclick="closeScheduleModal()"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                    Add specific time slots for your daily uploads. Our engine will distribute your selected videos across these slots.
+                </p>
+                
+                <div class="flex-group" style="align-items: flex-end;">
+                    <div>
+                        <label>Select Time</label>
+                        <input type="time" id="new-slot-time" value="12:00">
+                    </div>
+                    <button class="btn primary" onclick="addTimeSlot()" style="margin-bottom: 16px;">
+                        <i data-lucide="plus"></i> Add
+                    </button>
+                </div>
+
+                <div class="section-title">Active Slots</div>
+                <div id="modal-slot-list" class="slot-list">
+                    <!-- Slots will appear here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeScheduleModal()">Cancel</button>
+                <button class="btn primary" onclick="confirmSlots()">Confirm Slots</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Hidden file input for media upload -->
     <input type="file" id="media-upload-hidden" multiple style="display:none">

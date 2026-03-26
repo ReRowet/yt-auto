@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import Groq from 'groq-sdk';
 import { readData } from './json-db.js';
 
@@ -25,7 +25,7 @@ class AIService {
     async generateMetadata(options) {
         const { niche, referenceTitle, country, fileName, category } = options;
         this.updateConfig();
-        
+
         const prompt = `
 You are a senior YouTube growth strategist, SEO expert, and viral content specialist.
 
@@ -107,11 +107,12 @@ Output format:
     }
 
     async callGemini(prompt) {
-        const genAI = new GoogleGenerativeAI(this.geminiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        return this.parseJSON(text);
+        const ai = new GoogleGenAI({ apiKey: this.geminiKey });
+        const result = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: prompt
+        });
+        return this.parseJSON(result.text);
     }
 
     async callGroq(prompt) {

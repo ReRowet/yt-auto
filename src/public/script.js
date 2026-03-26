@@ -9,8 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
         settings: {},
         currentMediaType: 'videos',
         selectedMediaFiles: [],
-        selectedThumbnailFiles: []
+        selectedThumbnailFiles: [],
+        timeSlots: ["10:00"] // Default daily slot
     };
+
+    // Init dates
+    const sDate = document.getElementById('m-start-date');
+    if (sDate) sDate.value = new Date().toISOString().split('T')[0];
 
     // Navigation Logic
     const navItems = document.querySelectorAll('.nav-item');
@@ -40,8 +45,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadTabContent = (tabId) => {
         if (tabId === 'dashboard') loadDashboardStats();
         if (tabId === 'channels') loadChannels();
-        if (tabId === 'automation') loadGlobalSchedules();
+        if (tabId === 'automation') {
+            loadGlobalSchedules();
+            startLogPolling();
+        } else {
+            stopLogPolling();
+        }
         if (tabId === 'settings') loadSettings();
+    };
+
+    let logInterval = null;
+    const startLogPolling = () => {
+        stopLogPolling();
+        logInterval = setInterval(() => {
+            if (state.activeTab === 'automation') window.loadLogs();
+        }, 3000); // 3 seconds
+    };
+    const stopLogPolling = () => {
+        if (logInterval) clearInterval(logInterval);
+        logInterval = null;
     };
     
     // Safely create icons
@@ -116,6 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         switchTab('channel-manage');
         loadChannelMedia(id);
+        state.selectedMediaFiles = [];
+        state.selectedThumbnailFiles = [];
+        updateScheduleCalculations();
         safeCreateIcons();
     };
 
@@ -168,6 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const idx = selectionList.indexOf(name);
         if (idx > -1) selectionList.splice(idx, 1);
         else selectionList.push(name);
+        
+        if (!isImage) updateScheduleCalculations();
         renderGallery();
     };
 
@@ -298,27 +325,99 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok) loadGlobalSchedules();
         } catch (err) { console.error(err); }
     };
+    // 5. Advanced Scheduling Modal
+    window.openScheduleModal = () => {
+        const modal = document.getElementById('schedule-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            renderModalSlots();
+        }
+    };
+
+    window.closeScheduleModal = () => {
+        const modal = document.getElementById('schedule-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    const renderModalSlots = () => {
+        const list = document.getElementById('modal-slot-list');
+        if (!list) return;
+        list.innerHTML = state.timeSlots.map((time, idx) => `
+            <span class="slot-pill">
+                ${time}
+                <i data-lucide="x-circle" onclick="removeTimeSlot(${idx})"></i>
+            </span>
+        `).join('');
+        safeCreateIcons();
+    };
+
+    window.addTimeSlot = () => {
+        const timeInput = document.getElementById('new-slot-time');
+        const time = timeInput.value;
+        if (time && !state.timeSlots.includes(time)) {
+            state.timeSlots.push(time);
+            state.timeSlots.sort();
+            renderModalSlots();
+        }
+    };
+
+    window.removeTimeSlot = (idx) => {
+        state.timeSlots.splice(idx, 1);
+        renderModalSlots();
+    };
+
+    window.confirmSlots = () => {
+        const preview = document.getElementById('m-slot-preview');
+        if (preview) {
+            preview.innerHTML = state.timeSlots.map(time => `<span class="slot-pill">${time}</span>`).join('');
+        }
+        updateScheduleCalculations();
+        closeScheduleModal();
+    };
+
+    window.updateScheduleCalculations = () => {
+        const vPerDay = parseInt(document.getElementById('m-frequency')?.value) || 1;
+        const totalVideos = state.selectedMediaFiles.length;
+        const startDateVal = document.getElementById('m-start-date')?.value;
+        const summaryText = document.getElementById('summary-text');
+
+        if (totalVideos === 0) {
+            if (summaryText) summaryText.innerText = 'Select videos to calculate schedule.';
+            return;
+        }
+
+        const totalDays = Math.ceil(totalVideos / vPerDay);
+        const endDate = new Date(startDateVal || new Date());
+        endDate.setDate(endDate.getDate() + (totalDays - 1));
+
+        const dateStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        if (summaryText) {
+            summaryText.innerHTML = `Running for <b>${totalDays} days</b>. Ending on <b>${dateStr}</b>.`;
+            if (vPerDay > state.timeSlots.length) {
+                summaryText.innerHTML += `<br><span style="color: #f85149; font-size: 10px;">⚠️ Note: Only ${state.timeSlots.length} slots defined. Extra posts will use the last slot.</span>`;
+            }
+        }
+    };
+
     document.getElementById('btn-schedule-batch').onclick = async () => {
         if (!state.activeChannelId) return alert('Select a channel first.');
         if (state.selectedMediaFiles.length === 0) return alert('Select at least one video from the gallery.');
+        if (state.timeSlots.length === 0) return alert('Configure at least one daily time slot.');
 
         const startDateInput = document.getElementById('m-start-date').value;
-        const endDateInput = document.getElementById('m-end-date').value;
-        const uploadTime = document.getElementById('m-time').value; // e.g., "10:00"
+        const niche = document.getElementById('m-niche').value;
+        const refTitle = document.getElementById('m-ref-title').value;
+        const country = document.getElementById('m-country').value;
+        const category = document.getElementById('m-category').value;
+        const audioCount = parseInt(document.getElementById('m-audio-count').value) || 1;
+        const useThumb = document.getElementById('m-use-thumb').checked;
+        const vPerDay = parseInt(document.getElementById('m-frequency').value) || 1;
 
-        if (!startDateInput || !endDateInput) return alert('Please select Start and End date.');
-
+        if (!startDateInput) return alert('Please select a Start Date.');
         const startDate = new Date(startDateInput);
-        const endDate = new Date(endDateInput);
-        const [hours, minutes] = uploadTime.split(':').map(Number);
 
-        // Calculate total days (inclusive)
-        const diffTime = Math.abs(endDate - startDate);
-        const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-        if (totalDays <= 0) return alert('End date must be after Start date.');
-
-        // Validation V3.0: Check AI Keys
+        // Validation: AI Keys
         const provider = state.settings.preferredProvider || 'gemini';
         const hasKey = provider === 'gemini' ? state.settings.geminiApiKey : state.settings.groqApiKey;
         if (!hasKey) {
@@ -327,52 +426,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const videos = state.selectedMediaFiles;
-        const vPerDay = Math.ceil(videos.length / totalDays);
-        
         let allJobs = [];
-        let currentVideoIdx = 0;
 
-        for (let d = 0; d < totalDays; d++) {
-            if (currentVideoIdx >= videos.length) break;
+        for (let i = 0; i < videos.length; i++) {
+            const dayOffset = Math.floor(i / vPerDay);
+            const slotIdx = i % vPerDay;
+            
+            // Use time slot or fallback to last one
+            const timeStr = state.timeSlots[slotIdx] || state.timeSlots[state.timeSlots.length - 1];
+            const [hours, minutes] = timeStr.split(':').map(Number);
 
-            const currentDayDate = new Date(startDate);
-            currentDayDate.setDate(startDate.getDate() + d);
-            currentDayDate.setHours(hours, minutes, 0, 0);
+            const jobTime = new Date(startDate);
+            jobTime.setDate(startDate.getDate() + dayOffset);
+            jobTime.setHours(hours, minutes, 0, 0);
 
-            // Validation V3.0: No Past Schedules
-            if (currentDayDate < new Date()) {
-                console.warn(`Skipping past date: ${currentDayDate.toDateString()}`);
+            // Skip if past
+            if (jobTime < new Date()) {
+                console.warn(`Skipping past slot: ${jobTime.toISOString()}`);
                 continue; 
             }
 
-            // Distribution: spread videos for this specific day
-            for (let i = 0; i < vPerDay; i++) {
-                if (currentVideoIdx >= videos.length) break;
-
-                // Add 5 min buffer between videos on the same day
-                const jobTime = new Date(currentDayDate.getTime() + (i * 5 * 60000));
-                
-                allJobs.push({
-                    videoFile: videos[currentVideoIdx],
-                    scheduleTime: jobTime.toISOString()
-                });
-                currentVideoIdx++;
-            }
+            allJobs.push({
+                videoFile: videos[i],
+                scheduleTime: jobTime.toISOString()
+            });
         }
+
+        if (allJobs.length === 0) return alert('None of the chosen slots are in the future. Check your start date/times.');
 
         const payload = {
             accountId: state.activeChannelId,
             videoFiles: allJobs.map(j => j.videoFile),
             scheduleTimes: allJobs.map(j => j.scheduleTime),
             thumbnailFiles: allJobs.map((j, idx) => {
-                // Logic: Cycle thumbnails if fewer than videos
-                if (state.selectedThumbnailFiles.length === 0) return null;
+                if (!useThumb || state.selectedThumbnailFiles.length === 0) return null;
                 return state.selectedThumbnailFiles[idx % state.selectedThumbnailFiles.length];
             }),
-            niche: document.getElementById('m-niche').value,
-            referenceTitle: document.getElementById('m-ref-title').value,
-            targetCountry: document.getElementById('m-country').value,
-            category: document.getElementById('m-category').value
+            niche,
+            referenceTitle: refTitle,
+            targetCountry: country,
+            category,
+            audioCount // Passing new production setting
         };
 
         try {

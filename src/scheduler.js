@@ -82,12 +82,13 @@ const startScheduler = () => {
                 });
 
                 // 3. Render (Loudnorm + Shuffle)
-                logProcess(`[Render] Encoding video with audio pool at "${audioPoolDir}"...`);
+                logProcess(`[Render] Encoding video with audio pool at "${audioPoolDir}" (${job.audioCount || 1} tracks)...`);
                 renderResult = await renderVideo({
                     videoFile: videoPath,
                     audioDir: audioPoolDir,
                     outputDir: outputDir,
-                    title: aiMetadata.title.replace(/[\\/:*?"<>|]/g, '_').substring(0, 40)
+                    title: aiMetadata.title.replace(/[\\/:*?"<>|]/g, '_').substring(0, 40),
+                    songCount: job.audioCount || 1
                 });
 
                 // 4. YouTube Upload (with AI Insights & Thumbnail)

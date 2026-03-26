@@ -164,7 +164,7 @@ app.get('/api/schedules', (req, res) => {
 app.post('/api/schedules/batch', (req, res) => {
     const { 
         accountId, videoFiles, scheduleTimes, thumbnailFiles, 
-        niche, referenceTitle, targetCountry, category
+        niche, referenceTitle, targetCountry, category, audioCount
     } = req.body;
 
     if (!accountId || !videoFiles) return res.status(400).json({ error: 'Missing fields' });
@@ -183,6 +183,7 @@ app.post('/api/schedules/batch', (req, res) => {
             referenceTitle,
             targetCountry,
             category: category || '22',
+            audioCount: audioCount || 1,
             scheduleTime: jobTime,
             status: 'pending',
             createdAt: new Date().toISOString()
