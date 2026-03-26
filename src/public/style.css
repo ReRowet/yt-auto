@@ -48,6 +48,12 @@ body {
     color: var(--accent);
 }
 
+.logo img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
 .nav-item {
     display: flex;
     align-items: center;

@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamBOSS | YouTube Shorts Automation</title>
+    <title>Re Publis</title>
     <link rel="stylesheet" href="style.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-            <i data-lucide="zap"></i>
-            <span>StreamBOSS</span>
+            <img src="/logo.png" alt="Logo" id="header-logo">
+            <span>Re Publis</span>
         </div>
         <nav class="nav-group">
             <a href="#" class="nav-item active" data-tab="dashboard">
@@ -32,15 +35,21 @@
         <div class="sidebar-footer">
             <div class="resource-monitor">
                 <span>CPU Usage (<span id="cpu-load">0</span>%)</span>
-                <div class="progress-bar"><div class="progress-fill" id="cpu-fill" style="width: 0%;"></div></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpu-fill" style="width: 0%;"></div>
+                </div>
             </div>
             <div class="resource-monitor">
                 <span>RAM Usage (<span id="ram-load">0</span>%)</span>
-                <div class="progress-bar"><div class="progress-fill" id="ram-fill" style="width: 0%; background: var(--purple);"></div></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ram-fill" style="width: 0%; background: var(--purple);"></div>
+                </div>
             </div>
             <div class="resource-monitor">
                 <span id="disk-label">Storage (0 GB / 0 GB)</span>
-                <div class="progress-bar"><div class="progress-fill" id="disk-fill" style="width: 0%; background: var(--green);"></div></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="disk-fill" style="width: 0%; background: var(--green);"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -82,7 +91,8 @@
                         <i data-lucide="refresh-cw"></i> Refresh Logs
                     </button>
                 </div>
-                <div id="log-container" style="background: #0d1117; color: #d1d5db; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 11px; height: 180px; overflow-y: auto;">
+                <div id="log-container"
+                    style="background: #0d1117; color: #d1d5db; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 11px; height: 180px; overflow-y: auto;">
                     <!-- Logs injected here -->
                 </div>
             </div>
@@ -163,13 +173,13 @@
                     <!-- Automation Workspace -->
                     <div class="automation-card card">
                         <h3>Production Workspace</h3>
-                        
+
                         <div class="section-title">Niche & Strategy</div>
                         <label>Niche Target</label>
                         <input type="text" id="m-niche" placeholder="Gaming, Tech, Funny...">
                         <label>Reference Title (Optional)</label>
                         <input type="text" id="m-ref-title" placeholder="Viral Hook Title">
-                        
+
                         <div class="flex-group">
                             <div>
                                 <label>Target Country</label>
@@ -195,7 +205,9 @@
                         <div class="section-title">Production Settings</div>
                         <div class="flex-group">
                             <div>
-                                <label>Audio Loops <span style="font-size: 10px; color: var(--accent); font-weight: normal; margin-left: 4px;">Smart Audio (Total-3)</span></label>
+                                <label>Audio Loops <span
+                                        style="font-size: 10px; color: var(--accent); font-weight: normal; margin-left: 4px;">Smart
+                                        Audio (Total-3)</span></label>
                                 <select id="m-audio-loops" style="width: 100%;">
                                     <option value="1">1x Loop</option>
                                     <option value="2">2x Loop</option>
@@ -223,9 +235,12 @@
                         </div>
 
                         <div class="section-title">Schedule Settings</div>
-                        <div style="background: #0d1117; padding: 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 16px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Publishing Slots Queue</span>
+                        <div
+                            style="background: #0d1117; padding: 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 16px;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Publishing
+                                    Slots Queue</span>
                                 <button class="btn link small" onclick="openScheduleModal()">
                                     <i data-lucide="settings-2" style="width: 14px;"></i> Edit Pool
                                 </button>
@@ -235,7 +250,8 @@
                             </div>
                         </div>
 
-                        <button class="btn primary" id="btn-schedule-batch" style="width: 100%; margin-top: 20px; justify-content: center; font-weight: 600;">
+                        <button class="btn primary" id="btn-schedule-batch"
+                            style="width: 100%; margin-top: 20px; justify-content: center; font-weight: 600;">
                             <i data-lucide="zap"></i> Start Automation Batch
                         </button>
                     </div>
@@ -272,7 +288,9 @@
 
         <!-- AI Settings -->
         <section id="settings" class="tab-content">
-            <header><h1>AI Configuration</h1></header>
+            <header>
+                <h1>AI Configuration</h1>
+            </header>
             <div class="card" style="max-width: 600px;">
                 <form id="settings-form">
                     <label>Preferred Provider</label>
@@ -280,16 +298,20 @@
                         <option value="gemini">Google Gemini AI</option>
                         <option value="groq">Groq AI</option>
                     </select>
-                        <div id="gemini-input-group">
-                            <label>Gemini API Key</label>
-                            <input type="password" id="s-gemini-key">
-                        </div>
-                        <div id="groq-input-group" class="hidden">
-                            <label>Groq API Key</label>
-                            <input type="password" id="s-groq-key">
-                        </div>
-                    <div id="settings-error" class="error-msg hidden" style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;"></div>
-                    <div id="settings-success" class="success-msg hidden" style="color: #50fa7b; background: rgba(80, 250, 123, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;"></div>
+                    <div id="gemini-input-group">
+                        <label>Gemini API Key</label>
+                        <input type="password" id="s-gemini-key">
+                    </div>
+                    <div id="groq-input-group" class="hidden">
+                        <label>Groq API Key</label>
+                        <input type="password" id="s-groq-key">
+                    </div>
+                    <div id="settings-error" class="error-msg hidden"
+                        style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;">
+                    </div>
+                    <div id="settings-success" class="success-msg hidden"
+                        style="color: #50fa7b; background: rgba(80, 250, 123, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;">
+                    </div>
                     <button type="submit" class="btn primary">Save API Settings</button>
                 </form>
             </div>
@@ -301,24 +323,28 @@
                 <h1>Register New Channel</h1>
                 <p>Upload your combined Google OAuth JSON file to automatically connect your channel.</p>
             </header>
-            
+
             <div class="card" style="max-width: 500px; text-align: center; padding: 40px 20px;">
                 <div style="margin-bottom: 24px;">
-                    <i data-lucide="shield-check" style="width: 48px; height: 48px; color: var(--accent); margin-bottom: 16px;"></i>
+                    <i data-lucide="shield-check"
+                        style="width: 48px; height: 48px; color: var(--accent); margin-bottom: 16px;"></i>
                     <h3>Secure JSON Import</h3>
                     <p class="small text-muted" style="margin-top: 8px; margin-bottom: 24px;">
-                        Make sure the JSON contains <code>client_id</code>, <code>client_secret</code>, and <code>refresh_token</code>.
+                        Make sure the JSON contains <code>client_id</code>, <code>client_secret</code>, and
+                        <code>refresh_token</code>.
                     </p>
                 </div>
-                
-                <div id="add-channel-error" class="error-msg hidden" style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; font-size: 13px; text-align: left;"></div>
-                
+
+                <div id="add-channel-error" class="error-msg hidden"
+                    style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; font-size: 13px; text-align: left;">
+                </div>
+
                 <button class="btn primary" id="btn-trigger-json" style="width: 100%; height: 50px; font-size: 16px;">
                     <i data-lucide="file-json"></i> Pilih File JSON & Hubungkan
                 </button>
-                
+
                 <input type="file" id="a-json-file-hidden" accept=".json" style="display:none">
-                
+
                 <p class="small text-muted" style="margin-top: 20px;">
                     Sesuai permintaan, input manual telah dihapus untuk keamanan dan kecepatan.
                 </p>
@@ -335,9 +361,10 @@
             </div>
             <div class="modal-body">
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-                    Add specific time slots for your daily uploads. Our engine will distribute your selected videos across these slots.
+                    Add specific time slots for your daily uploads. Our engine will distribute your selected videos
+                    across these slots.
                 </p>
-                
+
                 <div class="flex-group" style="align-items: flex-end;">
                     <div>
                         <label>Select Date</label>
@@ -370,4 +397,5 @@
     <script src="script.js?v=7"></script>
     <script>lucide.createIcons();</script>
 </body>
+
 </html>
