@@ -77,6 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const backDashboard = document.getElementById('btn-back-dashboard');
     if (backDashboard) backDashboard.onclick = () => switchTab('channels');
 
+    const uploadBtn = document.getElementById('btn-upload-media');
+    if (uploadBtn) uploadBtn.onclick = () => {
+        const hiddenInput = document.getElementById('media-upload-hidden');
+        if (hiddenInput) hiddenInput.click();
+    };
+
     // 1. Dashboard & Channels
     const loadDashboardStats = async () => {
         try {
@@ -412,7 +418,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const category = document.getElementById('m-category').value;
         const audioCount = parseInt(document.getElementById('m-audio-count').value) || 1;
         const useThumb = document.getElementById('m-use-thumb').checked;
-        const vPerDay = parseInt(document.getElementById('m-frequency').value) || 1;
+        const freqEl = document.getElementById('m-frequency');
+        const vPerDay = freqEl ? parseInt(freqEl.value) : 1;
 
         if (!startDateInput) return alert('Please select a Start Date.');
         const startDate = new Date(startDateInput);
@@ -483,43 +490,47 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { console.error('Schedule failed:', err); }
     };
 
-    // 5. Upload Handling
-    const uploadBtn = document.getElementById('btn-upload-media');
     const hiddenInput = document.getElementById('media-upload-hidden');
+    if (hiddenInput) {
+        hiddenInput.onchange = async () => {
+            const files = hiddenInput.files;
+            if (files.length === 0) return;
 
-    uploadBtn.onclick = () => hiddenInput.click();
-    hiddenInput.onchange = async () => {
-        const files = hiddenInput.files;
-        if (files.length === 0) return;
+            const formData = new FormData();
+            let type = 'video';
+            if (state.currentMediaType === 'audios') type = 'audio';
+            else if (state.currentMediaType === 'images') type = 'image';
+            
+            for (let f of files) formData.append(type, f);
 
-        const formData = new FormData();
-        let type = 'video';
-        if (state.currentMediaType === 'audios') type = 'audio';
-        else if (state.currentMediaType === 'images') type = 'image';
-        
-        for (let f of files) formData.append(type, f);
+            try {
+                const uploadBtn = document.getElementById('btn-upload-media');
+                if (uploadBtn) {
+                    uploadBtn.disabled = true;
+                    uploadBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Uploading...';
+                    safeCreateIcons();
+                }
 
-        try {
-            uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Uploading...';
-            safeCreateIcons();
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'x-channel-id': state.activeChannelId },
+                    body: formData
+                });
 
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                headers: { 'x-channel-id': state.activeChannelId },
-                body: formData
-            });
-
-            if (res.ok) {
-                loadChannelMedia(state.activeChannelId);
+                if (res.ok) {
+                    loadChannelMedia(state.activeChannelId);
+                }
+            } catch (err) { console.error(err); }
+            finally {
+                const uploadBtn = document.getElementById('btn-upload-media');
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = '<i data-lucide="upload"></i> Upload Media';
+                    safeCreateIcons();
+                }
             }
-        } catch (err) { console.error(err); }
-        finally {
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = '<i data-lucide="upload"></i> Upload Media';
-            safeCreateIcons();
-        }
-    };
+        };
+    }
 
     // 6. Channel & Settings Forms (Simplified JSON-Only Version)
     const btnTriggerJson = document.getElementById('btn-trigger-json');
