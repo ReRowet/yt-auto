@@ -93,7 +93,8 @@ const renderVideo = async (options) => {
         const selectedAudios = generateAudioList(audioFiles, calculatedSongCount, loopCount);
         
         // 2. Concat Audio (Direct stream copy without normalization)
-        const combinedAudioPath = path.join(tempDir, 'combined.mp3');
+        const firstExt = path.extname(selectedAudios[0]) || '.mp3';
+        const combinedAudioPath = path.join(tempDir, `combined${firstExt}`);
         const audioTxtPath = path.join(tempDir, 'list.txt');
         fs.writeFileSync(audioTxtPath, selectedAudios.map(a => `file '${a.replace(/'/g, "'\\''")}'`).join('\n'));
 
@@ -101,7 +102,8 @@ const renderVideo = async (options) => {
         await new Promise((resolve, reject) => {
             ffmpeg()
                 .input(audioTxtPath).inputOptions(['-f concat', '-safe 0'])
-                .outputOptions(['-c:a copy'])
+                .outputOptions(['-c:a copy', '-vn']) // -vn prevents album art from breaking the stream
+
                 .save(combinedAudioPath)
                 .on('end', resolve)
                 .on('error', reject);
