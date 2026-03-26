@@ -93,7 +93,7 @@ const renderVideo = async (options) => {
         const selectedAudios = generateAudioList(audioFiles, calculatedSongCount, loopCount);
         
         // 2. Concat & Normalize Audio
-        const combinedAudioPath = path.join(tempDir, 'combined.mp3');
+        const combinedAudioPath = path.join(tempDir, 'combined.m4a');
         const audioTxtPath = path.join(tempDir, 'list.txt');
         fs.writeFileSync(audioTxtPath, selectedAudios.map(a => `file '${a.replace(/'/g, "'\\''")}'`).join('\n'));
 
@@ -102,7 +102,7 @@ const renderVideo = async (options) => {
             ffmpeg()
                 .input(audioTxtPath).inputOptions(['-f concat', '-safe 0'])
                 .audioFilters('loudnorm=I=-16:LRA=11:TP=-1.5')
-                .outputOptions(['-ar 44100', '-ac 2', '-b:a 128k'])
+                .outputOptions(['-c:a aac', '-ar 44100', '-ac 2', '-b:a 128k'])
                 .save(combinedAudioPath)
                 .on('end', resolve)
                 .on('error', reject);
@@ -122,7 +122,7 @@ const renderVideo = async (options) => {
                     '-c:v libx264',
                     '-preset fast',
                     '-crf 23',
-                    '-c:a aac',
+                    '-c:a copy',
                     '-shortest',
                     '-pix_fmt yuv420p'
                 ])
