@@ -43,7 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabId === 'settings') loadSettings();
     };
     
-    document.getElementById('btn-add-channel-top').onclick = () => switchTab('add-channel');
+    // Safely create icons
+    const safeCreateIcons = () => {
+        if (window.lucide) lucide.createIcons();
+    };
+
+    const addChannelTop = document.getElementById('btn-add-channel-top');
+    if (addChannelTop) addChannelTop.onclick = () => switchTab('add-channel');
+
+    const backDashboard = document.getElementById('btn-back-dashboard');
+    if (backDashboard) backDashboard.onclick = () => switchTab('channels');
 
     // 1. Dashboard & Channels
     const loadDashboardStats = async () => {
@@ -106,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         switchTab('channel-manage');
         loadChannelMedia(id);
-        lucide.createIcons();
+        safeCreateIcons();
     };
 
     const loadChannelMedia = async (channelId) => {
@@ -147,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         }).join('');
-        lucide.createIcons();
+        safeCreateIcons();
     };
 
     // 3. Media Actions
@@ -176,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p>Audio Preview</p>
                 <audio src="${path}" controls autoplay style="width: 100%; margin-top: 12px;"></audio>
             </div>`;
-            lucide.createIcons();
+            safeCreateIcons();
         }
     };
 
@@ -379,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Uploading...';
-            lucide.createIcons();
+            safeCreateIcons();
 
             const res = await fetch('/api/upload', {
                 method: 'POST',
@@ -394,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finally {
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = '<i data-lucide="upload"></i> Upload Media';
-            lucide.createIcons();
+            safeCreateIcons();
         }
     };
 
@@ -432,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Visual Feedback
                     btnTriggerJson.disabled = true;
                     btnTriggerJson.innerHTML = '<i data-lucide="loader" class="spin"></i> Menghubungkan...';
-                    lucide.createIcons();
+                    safeCreateIcons();
 
                     const res = await fetch('/api/accounts', {
                         method: 'POST',
@@ -457,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } finally {
                     btnTriggerJson.disabled = false;
                     btnTriggerJson.innerHTML = '<i data-lucide="file-json"></i> Pilih File JSON & Hubungkan';
-                    lucide.createIcons();
+                    safeCreateIcons();
                 }
             };
             reader.readAsText(file);
@@ -524,5 +533,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial Load
     switchTab('dashboard');
     startSystemPoller();
-    lucide.createIcons();
+    safeCreateIcons();
 });
