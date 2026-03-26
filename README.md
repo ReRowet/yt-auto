@@ -25,6 +25,13 @@ To start the server, run:
 ```bash
 node src/app.js
 ```
+
+
+```
+chmod +x setup-tunnel.sh
+./setup-tunnel.sh
+```
+
 Open your browser and go to: `http://localhost:3005`
 
 ---

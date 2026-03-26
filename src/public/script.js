@@ -398,26 +398,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 6. Channel & Settings Forms
-    document.getElementById('add-channel-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const payload = {
-            clientId: document.getElementById('a-clientId').value,
-            clientSecret: document.getElementById('a-clientSecret').value,
-            refreshToken: document.getElementById('a-refreshToken').value
+    // 6. Channel & Settings Forms (Simplified JSON-Only Version)
+    const btnTriggerJson = document.getElementById('btn-trigger-json');
+    const jsonFileInput = document.getElementById('a-json-file-hidden');
+    const addChannelError = document.getElementById('add-channel-error');
+
+    if (btnTriggerJson) {
+        btnTriggerJson.onclick = () => jsonFileInput.click();
+    }
+
+    if (jsonFileInput) {
+        jsonFileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    addChannelError.classList.add('hidden');
+                    addChannelError.textContent = '';
+                    
+                    const config = JSON.parse(event.target.result);
+                    const base = config.web || config.installed || config;
+                    
+                    const clientId = base.client_id || base.clientId || '';
+                    const clientSecret = base.client_secret || base.clientSecret || '';
+                    const refreshToken = base.refresh_token || base.refreshToken || config.refresh_token || config.refreshToken || '';
+
+                    if (!clientId || !clientSecret || !refreshToken) {
+                        throw new Error('JSON tidak lengkap. Pastikan ada client_id, client_secret, dan refresh_token.');
+                    }
+
+                    // Visual Feedback
+                    btnTriggerJson.disabled = true;
+                    btnTriggerJson.innerHTML = '<i data-lucide="loader" class="spin"></i> Menghubungkan...';
+                    lucide.createIcons();
+
+                    const res = await fetch('/api/accounts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clientId, clientSecret, refreshToken })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (res.ok) { 
+                        alert('Channel "' + data.account.title + '" berhasil terhubung!');
+                        switchTab('dashboard'); 
+                        jsonFileInput.value = ''; // Reset file input
+                    } else {
+                        addChannelError.textContent = data.error || 'Gagal menghubungkan channel.';
+                        addChannelError.classList.remove('hidden');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    addChannelError.textContent = 'Error: ' + err.message;
+                    addChannelError.classList.remove('hidden');
+                } finally {
+                    btnTriggerJson.disabled = false;
+                    btnTriggerJson.innerHTML = '<i data-lucide="file-json"></i> Pilih File JSON & Hubungkan';
+                    lucide.createIcons();
+                }
+            };
+            reader.readAsText(file);
         };
-        try {
-            const res = await fetch('/api/accounts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) { switchTab('dashboard'); e.target.reset(); }
-        } catch (err) { console.error(err); }
-    };
+    }
 
     document.getElementById('settings-form').onsubmit = async (e) => {
         e.preventDefault();
+        const errorDiv = document.getElementById('settings-error');
+        errorDiv.classList.add('hidden');
+        
         const payload = {
             preferredProvider: document.getElementById('s-provider').value,
             geminiApiKey: document.getElementById('s-gemini-key').value,
@@ -430,7 +481,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             });
             if (res.ok) alert('Settings Saved!');
-        } catch (err) { console.error(err); }
+            else {
+                const data = await res.json();
+                errorDiv.textContent = data.error || 'Failed to save settings.';
+                errorDiv.classList.remove('hidden');
+            }
+        } catch (err) { 
+            console.error(err);
+            errorDiv.textContent = 'Failed to save settings. Server error.';
+            errorDiv.classList.remove('hidden');
+        }
     };
 
     const loadSettings = async () => {

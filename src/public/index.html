@@ -245,28 +245,39 @@
                             <label>Groq API Key</label>
                             <input type="password" id="s-groq-key">
                         </div>
+                    <div id="settings-error" class="error-msg hidden" style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;"></div>
                     <button type="submit" class="btn primary">Save API Settings</button>
                 </form>
             </div>
         </section>
 
-        <!-- Add Channel Tab -->
+        <!-- Add Channel Tab (Simplified JSON Import) -->
         <section id="add-channel" class="tab-content">
-            <header><h1>Register New Channel</h1></header>
-            <div class="card" style="max-width: 600px;">
+            <header>
+                <h1>Register New Channel</h1>
+                <p>Upload your combined Google OAuth JSON file to automatically connect your channel.</p>
+            </header>
+            
+            <div class="card" style="max-width: 500px; text-align: center; padding: 40px 20px;">
                 <div style="margin-bottom: 24px;">
-                    <label>Import JSON Credentials</label>
-                    <input type="file" id="a-json-file" accept=".json">
+                    <i data-lucide="shield-check" style="width: 48px; height: 48px; color: var(--accent); margin-bottom: 16px;"></i>
+                    <h3>Secure JSON Import</h3>
+                    <p class="small text-muted" style="margin-top: 8px; margin-bottom: 24px;">
+                        Make sure the JSON contains <code>client_id</code>, <code>client_secret</code>, and <code>refresh_token</code>.
+                    </p>
                 </div>
-                <form id="add-channel-form">
-                    <label>Client ID</label>
-                    <input type="text" id="a-clientId" required>
-                    <label>Client Secret</label>
-                    <input type="password" id="a-clientSecret" required>
-                    <label>Refresh Token</label>
-                    <input type="password" id="a-refreshToken" required>
-                    <button type="submit" class="btn primary">Connect Channel</button>
-                </form>
+                
+                <div id="add-channel-error" class="error-msg hidden" style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 12px; border-radius: 4px; margin-bottom: 12px; font-size: 13px; text-align: left;"></div>
+                
+                <button class="btn primary" id="btn-trigger-json" style="width: 100%; height: 50px; font-size: 16px;">
+                    <i data-lucide="file-json"></i> Pilih File JSON & Hubungkan
+                </button>
+                
+                <input type="file" id="a-json-file-hidden" accept=".json" style="display:none">
+                
+                <p class="small text-muted" style="margin-top: 20px;">
+                    Sesuai permintaan, input manual telah dihapus untuk keamanan dan kecepatan.
+                </p>
             </div>
         </section>
     </main>
