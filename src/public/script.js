@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[DEBUG] DOM Loaded - Initializing StreamBOSS...');
     // State management
     let state = {
         activeTab: 'dashboard',
@@ -418,11 +419,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (jsonFileInput) {
         jsonFileInput.onchange = (e) => {
+            console.log('[DEBUG] JSON File Selected');
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = async (event) => {
+                console.log('[DEBUG] File Read Complete, parsing...');
                 try {
                     addChannelError.classList.add('hidden');
                     addChannelError.textContent = '';
