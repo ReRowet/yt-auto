@@ -348,9 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderModalSlots = () => {
         const list = document.getElementById('modal-slot-list');
         if (!list) return;
-        list.innerHTML = state.timeSlots.map((time, idx) => `
+        list.innerHTML = state.timeSlots.map((slot, idx) => `
             <span class="slot-pill">
-                ${time}
+                ${slot.date} ${slot.time}
                 <i data-lucide="x-circle" onclick="removeTimeSlot(${idx})"></i>
             </span>
         `).join('');
@@ -358,11 +358,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.addTimeSlot = () => {
+        const dateInput = document.getElementById('new-slot-date');
         const timeInput = document.getElementById('new-slot-time');
-        const time = timeInput.value;
-        if (time && !state.timeSlots.includes(time)) {
-            state.timeSlots.push(time);
-            state.timeSlots.sort();
+        const date = dateInput?.value;
+        const time = timeInput?.value;
+        if (!date || !time) return alert('Please select both date and time.');
+        
+        const exists = state.timeSlots.find(s => s.date === date && s.time === time);
+        if (!exists) {
+            state.timeSlots.push({ date, time });
+            state.timeSlots.sort((a,b) => new Date(a.date+'T'+a.time) - new Date(b.date+'T'+b.time));
             renderModalSlots();
         }
     };
@@ -375,16 +380,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.confirmSlots = () => {
         const preview = document.getElementById('m-slot-preview');
         if (preview) {
-            preview.innerHTML = state.timeSlots.map(time => `<span class="slot-pill">${time}</span>`).join('');
+            preview.innerHTML = state.timeSlots.map(slot => `<span class="slot-pill" style="font-size:10px">${slot.date} ${slot.time}</span>`).join('');
         }
         updateScheduleCalculations();
         closeScheduleModal();
     };
 
     window.updateScheduleCalculations = () => {
-        const vPerDay = parseInt(document.getElementById('m-frequency')?.value) || 1;
         const totalVideos = state.selectedMediaFiles.length;
-        const startDateVal = document.getElementById('m-start-date')?.value;
         const summaryText = document.getElementById('summary-text');
 
         if (totalVideos === 0) {
@@ -392,16 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const totalDays = Math.ceil(totalVideos / vPerDay);
-        const endDate = new Date(startDateVal || new Date());
-        endDate.setDate(endDate.getDate() + (totalDays - 1));
-
-        const dateStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        
         if (summaryText) {
-            summaryText.innerHTML = `Running for <b>${totalDays} days</b>. Ending on <b>${dateStr}</b>.`;
-            if (vPerDay > state.timeSlots.length) {
-                summaryText.innerHTML += `<br><span style="color: #f85149; font-size: 10px;">⚠️ Note: Only ${state.timeSlots.length} slots defined. Extra posts will use the last slot.</span>`;
+            if (totalVideos > state.timeSlots.length) {
+                summaryText.innerHTML = `<span style="color: #f85149;"><b>⚠️ Critical:</b> You selected ${totalVideos} videos but only defined ${state.timeSlots.length} slots. Please add more slots!</span>`;
+            } else {
+                summaryText.innerHTML = `<span style="color: #50fa7b;">✅ Mapping ${totalVideos} videos to ${state.timeSlots.length} slots sequentially.</span>`;
             }
         }
     };
@@ -409,9 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-schedule-batch').onclick = async () => {
         if (!state.activeChannelId) return alert('Select a channel first.');
         if (state.selectedMediaFiles.length === 0) return alert('Select at least one video from the gallery.');
-        if (state.timeSlots.length === 0) return alert('Configure at least one daily time slot.');
+        if (state.selectedMediaFiles.length > state.timeSlots.length) {
+            return alert(`Error: You selected ${state.selectedMediaFiles.length} videos but only defined ${state.timeSlots.length} slots in the Pool. Please define enough slots.`);
+        }
 
-        const startDateInput = document.getElementById('m-start-date').value;
         const niche = document.getElementById('m-niche').value;
         const refTitle = document.getElementById('m-ref-title').value;
         const country = document.getElementById('m-country').value;
@@ -419,11 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const loopCount = parseInt(document.getElementById('m-audio-loops')?.value) || 1;
         const useThumb = document.getElementById('m-use-thumb')?.checked;
         const deleteRaw = document.getElementById('m-delete-raw')?.checked;
-        const freqEl = document.getElementById('m-frequency');
-        const vPerDay = freqEl ? parseInt(freqEl.value) : 1;
-
-        if (!startDateInput) return alert('Please select a Start Date.');
-        const startDate = new Date(startDateInput);
 
         // Validation: AI Keys
         const provider = state.settings.preferredProvider || 'gemini';
@@ -437,21 +431,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let allJobs = [];
 
         for (let i = 0; i < videos.length; i++) {
-            const dayOffset = Math.floor(i / vPerDay);
-            const slotIdx = i % vPerDay;
-            
-            // Use time slot or fallback to last one
-            const timeStr = state.timeSlots[slotIdx] || state.timeSlots[state.timeSlots.length - 1];
-            const [hours, minutes] = timeStr.split(':').map(Number);
+            const slot = state.timeSlots[i];
+            const [hours, minutes] = slot.time.split(':').map(Number);
 
-            const jobTime = new Date(startDate);
-            jobTime.setDate(startDate.getDate() + dayOffset);
+            const jobTime = new Date(slot.date);
             jobTime.setHours(hours, minutes, 0, 0);
 
             // Skip if past
             if (jobTime < new Date()) {
                 console.warn(`Skipping past slot: ${jobTime.toISOString()}`);
-                continue; 
+                alert(`Warning: The slot for ${slot.date} ${slot.time} is in the past! Job creation aborted.`);
+                return;
             }
 
             allJobs.push({
@@ -485,8 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
-                const totalDays = Math.ceil(allJobs.length / vPerDay);
-                alert(`Successfully scheduled ${allJobs.length} videos over ${totalDays} days!`);
+                alert(`Successfully mapped and scheduled ${allJobs.length} videos into the pool queue!`);
                 
                 // Reset selection
                 state.selectedMediaFiles = [];

@@ -129,8 +129,23 @@ const startScheduler = () => {
 
             } catch (err) {
                 logProcess(`[Error] Job ${job.id} failed: ${err.message}`, 'ERROR');
-                job.status = 'failed';
-                job.error = err.message;
+                
+                // Retry Logic: Repool to +1 minute ahead
+                job.retryCount = (job.retryCount || 0) + 1;
+                
+                if (job.retryCount <= 3) {
+                    const nextRetry = new Date();
+                    nextRetry.setMinutes(nextRetry.getMinutes() + 1);
+                    job.scheduleTime = nextRetry.toISOString();
+                    job.status = 'pending';
+                    job.error = `Retrying (${job.retryCount}/3)... Last Error: ${err.message}`;
+                    logProcess(`[Retry] Rescheduling job ${job.id} for 1 minute from now (Attempt ${job.retryCount}/3).`);
+                } else {
+                    job.status = 'failed';
+                    job.error = `Max retries (3) reached. Final Error: ${err.message}`;
+                    logProcess(`[Error] Job ${job.id} failed permanently.`, 'ERROR');
+                }
+                
                 writeData('schedules.json', schedules);
 
                 // CRITICAL: Cleanup if failure occurred during or after render
@@ -138,6 +153,10 @@ const startScheduler = () => {
                     logProcess(`[Cleanup] Deleting failed render file: ${renderResult.path}`, 'WARN');
                     try { fs.unlinkSync(renderResult.path); } catch(e) {}
                 }
+                
+                // Stop processing other jobs in this cron tick to prevent cascading failures
+                logProcess(`[Halt] Stopping further job processing in this batch due to error.`);
+                break;
             }
         }
     });

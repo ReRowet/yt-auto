@@ -213,36 +213,14 @@
                         <div class="section-title">Schedule Settings</div>
                         <div style="background: #0d1117; padding: 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 16px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Preferred Hours (Pool)</span>
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Publishing Slots Queue</span>
                                 <button class="btn link small" onclick="openScheduleModal()">
                                     <i data-lucide="settings-2" style="width: 14px;"></i> Edit Pool
                                 </button>
                             </div>
                             <div id="m-slot-preview" class="slot-list">
-                                <span class="slot-pill">10:00</span>
+                                <!-- Slots preview -->
                             </div>
-                        </div>
-
-                        <div class="flex-group">
-                            <div>
-                                <label>Videos Per Day</label>
-                                <select id="m-frequency" onchange="updateScheduleCalculations()">
-                                    <option value="1">1 Video / Day</option>
-                                    <option value="2">2 Videos / Day</option>
-                                    <option value="3" selected>3 Videos / Day</option>
-                                    <option value="4">4 Videos / Day</option>
-                                    <option value="5">5 Videos / Day</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Start Date</label>
-                                <input type="date" id="m-start-date" onchange="updateScheduleCalculations()">
-                            </div>
-                        </div>
-
-                        <div id="m-schedule-summary" style="background: rgba(44, 151, 222, 0.1); border-left: 3px solid var(--accent); padding: 12px; border-radius: 4px; font-size: 12px; margin-top: 8px;">
-                            <i data-lucide="calendar-days" style="width: 14px; margin-bottom: -2px;"></i>
-                            <span id="summary-text">Select videos to calculate schedule.</span>
                         </div>
 
                         <button class="btn primary" id="btn-schedule-batch" style="width: 100%; margin-top: 20px; justify-content: center; font-weight: 600;">
@@ -360,6 +338,10 @@
                 
                 <div class="flex-group" style="align-items: flex-end;">
                     <div>
+                        <label>Select Date</label>
+                        <input type="date" id="new-slot-date">
+                    </div>
+                    <div>
                         <label>Select Time</label>
                         <input type="time" id="new-slot-time" value="12:00">
                     </div>
@@ -383,7 +365,7 @@
     <!-- Hidden file input for media upload -->
     <input type="file" id="media-upload-hidden" multiple style="display:none">
 
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>
