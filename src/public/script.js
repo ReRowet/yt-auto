@@ -692,5 +692,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial Load
     switchTab('dashboard');
     startSystemPoller();
+    loadSettings();
     safeCreateIcons();
 });
