@@ -184,9 +184,15 @@
                         <div class="flex-group">
                             <div>
                                 <label>Audio Loops <span style="font-size: 10px; color: var(--accent); font-weight: normal; margin-left: 4px;">Smart Audio (Total-3)</span></label>
-                                <input type="number" id="m-audio-loops" value="1" min="1" max="10">
+                                <select id="m-audio-loops" style="width: 100%;">
+                                    <option value="1">1x Loop</option>
+                                    <option value="2">2x Loop</option>
+                                    <option value="3">3x Loop</option>
+                                    <option value="4">4x Loop</option>
+                                    <option value="5">5x Loop</option>
+                                </select>
                             </div>
-                            <div style="padding-top: 24px;">
+                            <div style="padding-top: 24px; display: flex; gap: 16px;">
                                 <div class="switch-group">
                                     <span style="font-size: 13px;">Use Thumbnails</span>
                                     <label class="switch">
@@ -194,13 +200,14 @@
                                         <span class="slider"></span>
                                     </label>
                                 </div>
+                                <div class="switch-group">
+                                    <span style="font-size: 13px;">Hapus Video Mentah</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="m-delete-raw" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
                             </div>
-                        </div>
-                        <div style="margin-top: 12px; margin-bottom: 20px;">
-                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; font-weight: normal;">
-                                <input type="checkbox" id="m-delete-raw" style="width: 16px; height: 16px;">
-                                Auto-Delete Source Video (from 'videos' folder) when Upload Success
-                            </label>
                         </div>
 
                         <div class="section-title">Schedule Settings</div>
