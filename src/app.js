@@ -9,6 +9,16 @@ import { startScheduler } from './scheduler.js';
 import { getChannelInfo } from './youtube-uploader.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import { authMiddleware } from './auth.js';
+
+dotenv.config();
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'fallback-access-secret';
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'fallback-refresh-secret';
+const USER_LOGIN = process.env.USER_LOGIN || 'admin';
+const USER_PASSWORD = process.env.USER_PASSWORD || 'admin123';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,6 +54,7 @@ const upload = multer({ storage });
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Request Logging
 app.use((req, res, next) => {
@@ -54,6 +65,38 @@ app.use((req, res, next) => {
 // Serve Static Files
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/publis', express.static(path.join(__dirname, '..', 'publis')));
+
+// --- AUTH ROUTES ---
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    if (username === USER_LOGIN && password === USER_PASSWORD) {
+        const user = { username };
+        const accessToken = jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: '10m' });
+        const refreshToken = jwt.sign(user, REFRESH_TOKEN_SECRET, { expiresIn: '24h' });
+        
+        res.json({ accessToken, refreshToken });
+    } else {
+        res.status(401).json({ error: 'Invalid credentials' });
+    }
+});
+
+app.post('/api/refresh', (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(401).json({ error: 'Refresh token required' });
+
+    jwt.verify(token, REFRESH_TOKEN_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Invalid refresh token' });
+        
+        const accessToken = jwt.sign({ username: user.username }, ACCESS_TOKEN_SECRET, { expiresIn: '10m' });
+        res.json({ accessToken });
+    });
+});
+
+// Protect all /api routes below this
+app.use('/api', (req, res, next) => {
+    if (req.path === '/login' || req.path === '/refresh') return next();
+    authMiddleware(req, res, next);
+});
 
 // --- API ROUTES v2.2 ---
 
