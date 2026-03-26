@@ -476,34 +476,39 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    document.getElementById('settings-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const errorDiv = document.getElementById('settings-error');
-        errorDiv.classList.add('hidden');
-        
-        const payload = {
-            preferredProvider: document.getElementById('s-provider').value,
-            geminiApiKey: document.getElementById('s-gemini-key').value,
-            groqApiKey: document.getElementById('s-groq-key').value
-        };
-        try {
-            const res = await fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) alert('Settings Saved!');
-            else {
-                const data = await res.json();
-                errorDiv.textContent = data.error || 'Failed to save settings.';
-                errorDiv.classList.remove('hidden');
+    const settingsForm = document.getElementById('settings-form');
+    if (settingsForm) {
+        settingsForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const errorDiv = document.getElementById('settings-error');
+            if (errorDiv) errorDiv.classList.add('hidden');
+            
+            const payload = {
+                preferredProvider: document.getElementById('s-provider')?.value,
+                geminiApiKey: document.getElementById('s-gemini-key')?.value,
+                groqApiKey: document.getElementById('s-groq-key')?.value
+            };
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) alert('Settings Saved!');
+                else if (errorDiv) {
+                    const data = await res.json();
+                    errorDiv.textContent = data.error || 'Failed to save settings.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) { 
+                console.error(err);
+                if (errorDiv) {
+                    errorDiv.textContent = 'Failed to save settings. Server error.';
+                    errorDiv.classList.remove('hidden');
+                }
             }
-        } catch (err) { 
-            console.error(err);
-            errorDiv.textContent = 'Failed to save settings. Server error.';
-            errorDiv.classList.remove('hidden');
-        }
-    };
+        };
+    }
 
     const loadSettings = async () => {
         try {
@@ -511,27 +516,37 @@ document.addEventListener('DOMContentLoaded', () => {
             state.settings = await res.json();
             
             const provider = state.settings.preferredProvider || 'gemini';
-            document.getElementById('s-provider').value = provider;
-            document.getElementById('s-gemini-key').value = state.settings.geminiApiKey || '';
-            document.getElementById('s-groq-key').value = state.settings.groqApiKey || '';
+            const sProvider = document.getElementById('s-provider');
+            const sGemini = document.getElementById('s-gemini-key');
+            const sGroq = document.getElementById('s-groq-key');
+            
+            if (sProvider) sProvider.value = provider;
+            if (sGemini) sGemini.value = state.settings.geminiApiKey || '';
+            if (sGroq) sGroq.value = state.settings.groqApiKey || '';
             
             toggleSettingsView(provider);
         } catch (err) { console.error(err); }
     };
 
     const toggleSettingsView = (provider) => {
+        const geminiGroup = document.getElementById('gemini-input-group');
+        const groqGroup = document.getElementById('groq-input-group');
+        
         if (provider === 'gemini') {
-            document.getElementById('gemini-input-group').classList.remove('hidden');
-            document.getElementById('groq-input-group').classList.add('hidden');
+            if (geminiGroup) geminiGroup.classList.remove('hidden');
+            if (groqGroup) groqGroup.classList.add('hidden');
         } else {
-            document.getElementById('gemini-input-group').classList.add('hidden');
-            document.getElementById('groq-input-group').classList.remove('hidden');
+            if (geminiGroup) geminiGroup.classList.add('hidden');
+            if (groqGroup) groqGroup.classList.remove('hidden');
         }
     };
 
-    document.getElementById('s-provider').addEventListener('change', (e) => {
-        toggleSettingsView(e.target.value);
-    });
+    const sProviderEl = document.getElementById('s-provider');
+    if (sProviderEl) {
+        sProviderEl.addEventListener('change', (e) => {
+            toggleSettingsView(e.target.value);
+        });
+    }
 
     // Initial Load
     switchTab('dashboard');
