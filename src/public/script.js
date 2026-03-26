@@ -16,8 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checkAuth = () => {
         const token = localStorage.getItem('accessToken');
-        if (!token && window.location.pathname !== '/login.html') {
-            window.location.href = '/login.html';
+        const isLoginPage = window.location.href.includes('login.html');
+        
+        if (!token && !isLoginPage) {
+            console.log('[AUTH] No token found, redirecting to login...');
+            window.location.href = 'login.html';
         }
     };
 

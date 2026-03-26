@@ -73,6 +73,7 @@
             font-weight: 600;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #fff 0%, #9ca3af 100%);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -249,7 +250,7 @@
                 if (response.ok) {
                     localStorage.setItem('accessToken', data.accessToken);
                     localStorage.setItem('refreshToken', data.refreshToken);
-                    window.location.href = '/';
+                    window.location.href = './';
                 } else {
                     errorMsg.textContent = data.error || 'Login failed';
                     errorMsg.style.display = 'block';
