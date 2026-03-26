@@ -92,17 +92,16 @@ const renderVideo = async (options) => {
 
         const selectedAudios = generateAudioList(audioFiles, calculatedSongCount, loopCount);
         
-        // 2. Concat & Normalize Audio
-        const combinedAudioPath = path.join(tempDir, 'combined.m4a');
+        // 2. Concat Audio (Direct stream copy without normalization)
+        const combinedAudioPath = path.join(tempDir, 'combined.mp3');
         const audioTxtPath = path.join(tempDir, 'list.txt');
         fs.writeFileSync(audioTxtPath, selectedAudios.map(a => `file '${a.replace(/'/g, "'\\''")}'`).join('\n'));
 
-        // Concat + Loudnorm
+        // Concat without Loudnorm (Pure Copy)
         await new Promise((resolve, reject) => {
             ffmpeg()
                 .input(audioTxtPath).inputOptions(['-f concat', '-safe 0'])
-                .audioFilters('loudnorm=I=-16:LRA=11:TP=-1.5')
-                .outputOptions(['-c:a aac', '-ar 44100', '-ac 2', '-b:a 128k'])
+                .outputOptions(['-c:a copy'])
                 .save(combinedAudioPath)
                 .on('end', resolve)
                 .on('error', reject);
