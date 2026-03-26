@@ -70,7 +70,6 @@ const renderVideo = async (options) => {
         audioDir,       // Directory of audio pool
         outputDir,      // Account-specific output dir
         title = 'render',
-        songCount = 2,
         loopCount = 1
     } = options;
 
@@ -88,7 +87,10 @@ const renderVideo = async (options) => {
 
         if (audioFiles.length === 0) throw new Error("Audio pool is empty.");
 
-        const selectedAudios = generateAudioList(audioFiles, songCount, loopCount);
+        // Automate songCount based on folder's file count minus 3
+        let calculatedSongCount = Math.max(1, audioFiles.length - 3);
+
+        const selectedAudios = generateAudioList(audioFiles, calculatedSongCount, loopCount);
         
         // 2. Concat & Normalize Audio
         const combinedAudioPath = path.join(tempDir, 'combined.mp3');

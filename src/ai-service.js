@@ -80,9 +80,9 @@ Instructions:
 
 Output format:
 {
-    "title": "...",
-    "description": "...",
-    "tags": ["...", "..."],
+    "title": "A highly clickable title here",
+    "description": "A very engaging description here",
+    "tags": ["tag1", "tag2", "tag3"],
     "category": "${category || '22'}"
 }
         `;
@@ -107,12 +107,25 @@ Output format:
     }
 
     async callGemini(prompt) {
-        const ai = new GoogleGenAI({ apiKey: this.geminiKey });
-        const result = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: prompt
-        });
-        return this.parseJSON(result.text);
+        try {
+            const ai = new GoogleGenAI({ apiKey: this.geminiKey });
+            const result = await ai.models.generateContent({
+                model: "gemini-3-flash-preview",
+                contents: prompt
+            });
+            
+            const text = result.text;
+            if (!text) {
+                console.error('[Gemini] Empty response received.');
+                throw new Error('AI returned empty response');
+            }
+            
+            console.log('[DEBUG] AI Raw Response:', text.substring(0, 100) + '...');
+            return this.parseJSON(text);
+        } catch (err) {
+            console.error('[Gemini Error]', err.message);
+            throw err; // Propagate to generation handler for fallback
+        }
     }
 
     async callGroq(prompt) {

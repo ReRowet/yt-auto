@@ -82,13 +82,13 @@ const startScheduler = () => {
                 });
 
                 // 3. Render (Loudnorm + Shuffle)
-                logProcess(`[Render] Encoding video with audio pool at "${audioPoolDir}" (${job.audioCount || 1} tracks)...`);
+                logProcess(`[Render] Encoding video with audio pool at "${audioPoolDir}" (${job.loopCount || 1}x loops)...`);
                 renderResult = await renderVideo({
                     videoFile: videoPath,
                     audioDir: audioPoolDir,
                     outputDir: outputDir,
                     title: aiMetadata.title.replace(/[\\/:*?"<>|]/g, '_').substring(0, 40),
-                    songCount: job.audioCount || 1
+                    loopCount: job.loopCount || 1
                 });
 
                 // 4. YouTube Upload (with AI Insights & Thumbnail)
@@ -109,6 +109,15 @@ const startScheduler = () => {
                 // 5. Cleanup Resources
                 logProcess(`[Cleanup] Cleaning up temporary production assets...`);
                 if (renderResult && fs.existsSync(renderResult.path)) fs.unlinkSync(renderResult.path);
+
+                // If deleteRaw is enabled, delete the original video file
+                if (job.deleteRaw) {
+                    logProcess(`[Cleanup] Option 'Hapus Video Mentah' is active. Deleting source video...`);
+                    if (fs.existsSync(videoPath)) {
+                        fs.unlinkSync(videoPath);
+                        logProcess(`[Cleanup] Source video deleted: ${videoPath}`);
+                    }
+                }
 
                 // 6. Complete Job
                 job.status = 'completed';

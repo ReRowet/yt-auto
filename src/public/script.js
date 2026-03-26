@@ -416,8 +416,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const refTitle = document.getElementById('m-ref-title').value;
         const country = document.getElementById('m-country').value;
         const category = document.getElementById('m-category').value;
-        const audioCount = parseInt(document.getElementById('m-audio-count').value) || 1;
-        const useThumb = document.getElementById('m-use-thumb').checked;
+        const loopCount = parseInt(document.getElementById('m-audio-loops')?.value) || 1;
+        const useThumb = document.getElementById('m-use-thumb')?.checked;
+        const deleteRaw = document.getElementById('m-delete-raw')?.checked;
         const freqEl = document.getElementById('m-frequency');
         const vPerDay = freqEl ? parseInt(freqEl.value) : 1;
 
@@ -473,7 +474,8 @@ document.addEventListener('DOMContentLoaded', () => {
             referenceTitle: refTitle,
             targetCountry: country,
             category,
-            audioCount // Passing new production setting
+            loopCount, // Passing new looping setting
+            deleteRaw  // Passing new deletion setting
         };
 
         try {
@@ -483,9 +485,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
+                const totalDays = Math.ceil(allJobs.length / vPerDay);
                 alert(`Successfully scheduled ${allJobs.length} videos over ${totalDays} days!`);
+                
+                // Reset selection
                 state.selectedMediaFiles = [];
+                state.selectedThumbnailFiles = [];
                 renderGallery();
+                updateScheduleCalculations();
+                switchTab('automation'); // Auto jump to monitor
             }
         } catch (err) { console.error('Schedule failed:', err); }
     };
@@ -618,7 +626,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (res.ok) alert('Settings Saved!');
+                if (res.ok) {
+                    const successDiv = document.getElementById('settings-success');
+                    if (successDiv) {
+                        successDiv.textContent = 'Settings Saved Permanently!';
+                        successDiv.classList.remove('hidden');
+                        setTimeout(() => successDiv.classList.add('hidden'), 3000);
+                    } else {
+                        alert('Settings Saved!');
+                    }
+                }
                 else if (errorDiv) {
                     const data = await res.json();
                     errorDiv.textContent = data.error || 'Failed to save settings.';

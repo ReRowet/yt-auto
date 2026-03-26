@@ -183,8 +183,8 @@
                         <div class="section-title">Production Settings</div>
                         <div class="flex-group">
                             <div>
-                                <label>Audio Mixed (Count)</label>
-                                <input type="number" id="m-audio-count" value="1" min="1" max="5">
+                                <label>Audio Loops <span style="font-size: 10px; color: var(--accent); font-weight: normal; margin-left: 4px;">Smart Audio (Total-3)</span></label>
+                                <input type="number" id="m-audio-loops" value="1" min="1" max="10">
                             </div>
                             <div style="padding-top: 24px;">
                                 <div class="switch-group">
@@ -195,6 +195,12 @@
                                     </label>
                                 </div>
                             </div>
+                        </div>
+                        <div style="margin-top: 12px; margin-bottom: 20px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; font-weight: normal;">
+                                <input type="checkbox" id="m-delete-raw" style="width: 16px; height: 16px;">
+                                Auto-Delete Source Video (from 'videos' folder) when Upload Success
+                            </label>
                         </div>
 
                         <div class="section-title">Schedule Settings</div>
@@ -296,6 +302,7 @@
                             <input type="password" id="s-groq-key">
                         </div>
                     <div id="settings-error" class="error-msg hidden" style="color: #ff5555; background: rgba(255, 85, 85, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;"></div>
+                    <div id="settings-success" class="success-msg hidden" style="color: #50fa7b; background: rgba(80, 250, 123, 0.1); padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 13px;"></div>
                     <button type="submit" class="btn primary">Save API Settings</button>
                 </form>
             </div>
