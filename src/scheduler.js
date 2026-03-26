@@ -10,12 +10,29 @@ import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const DATA_DIR = path.join(__dirname, '..', 'data');
+const LOG_FILE = path.join(DATA_DIR, 'process.log');
 
 /**
- * Initialize and start the background scheduler (v2.0.0)
+ * Log a message to the data/process.log file
+ */
+const logProcess = (message, type = 'INFO') => {
+    const timestamp = new Date().toISOString();
+    const entry = `[${timestamp}] [${type}] ${message}\n`;
+    try {
+        if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+        fs.appendFileSync(LOG_FILE, entry);
+        console.log(`[Scheduler] ${message}`);
+    } catch (err) {
+        console.error('Failed to write to process.log:', err);
+    }
+};
+
+/**
+ * Initialize and start the background scheduler (v3.0.0)
  */
 const startScheduler = () => {
-    console.log('[Scheduler] V2.0.0 Started. Polling every minute...');
+    logProcess('Automation engine v3.0.0 initialized.');
     
     cron.schedule('* * * * *', async () => {
         const schedules = readData('schedules.json');
@@ -28,9 +45,13 @@ const startScheduler = () => {
 
         if (pendingJobs.length === 0) return;
 
-        console.log(`[Scheduler] Processing ${pendingJobs.length} active jobs.`);
+        logProcess(`Analyzing ${pendingJobs.length} active jobs...`);
 
         for (const job of pendingJobs) {
+            let renderResult = null;
+            let thumbnailPath = null;
+            let accountTitle = 'Unknown';
+            
             try {
                 // 1. Lock & Update Status
                 job.status = 'processing';
@@ -38,17 +59,20 @@ const startScheduler = () => {
 
                 const account = accounts.find(a => a.id === job.accountId);
                 if (!account) throw new Error('Account not found');
+                accountTitle = account.title;
+
+                logProcess(`[${accountTitle}] Starting job ${job.id} for ${job.videoFile}`);
 
                 // Path Isolation
                 const videoPath = path.join(__dirname, '..', 'publis', account.id, 'videos', job.videoFile);
-                const thumbnailPath = job.thumbnailFile ? path.join(__dirname, '..', 'publis', account.id, 'images', job.thumbnailFile) : null;
+                thumbnailPath = job.thumbnailFile ? path.join(__dirname, '..', 'publis', account.id, 'images', job.thumbnailFile) : null;
                 const audioPoolDir = path.join(__dirname, '..', 'publis', account.id, 'audios');
                 const outputDir = path.join(__dirname, '..', 'publis', account.id, 'rendered');
                 
                 if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
                 // 2. AI Metadata Generation (Targeted)
-                console.log(`[AI] Generating strategy for ${account.title}...`);
+                logProcess(`[AI] Generating viral strategy for "${accountTitle}"...`);
                 const aiMetadata = await aiService.generateMetadata({
                     niche: job.niche || 'General',
                     referenceTitle: job.referenceTitle || '',
@@ -58,8 +82,8 @@ const startScheduler = () => {
                 });
 
                 // 3. Render (Loudnorm + Shuffle)
-                console.log(`[Render] Starting encoding for ${job.videoFile}...`);
-                const renderResult = await renderVideo({
+                logProcess(`[Render] Encoding video with audio pool at "${audioPoolDir}"...`);
+                renderResult = await renderVideo({
                     videoFile: videoPath,
                     audioDir: audioPoolDir,
                     outputDir: outputDir,
@@ -67,7 +91,7 @@ const startScheduler = () => {
                 });
 
                 // 4. YouTube Upload (with AI Insights & Thumbnail)
-                console.log(`[Upload] Content delivery for ${account.title}...`);
+                logProcess(`[Upload] Delivering content to YouTube channel: ${accountTitle}...`);
                 const uploadResult = await uploadVideo({
                     clientId: account.clientId,
                     clientSecret: account.clientSecret,
@@ -82,9 +106,8 @@ const startScheduler = () => {
                 });
 
                 // 5. Cleanup Resources
-                console.log(`[Cleanup] Post-processing asset deletion...`);
-                if (fs.existsSync(renderResult.path)) fs.unlinkSync(renderResult.path);
-                if (thumbnailPath && fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath);
+                logProcess(`[Cleanup] Cleaning up temporary production assets...`);
+                if (renderResult && fs.existsSync(renderResult.path)) fs.unlinkSync(renderResult.path);
 
                 // 6. Complete Job
                 job.status = 'completed';
@@ -92,13 +115,19 @@ const startScheduler = () => {
                 job.completedAt = new Date().toISOString();
                 writeData('schedules.json', schedules);
                 
-                console.log(`[Success] Channel ${account.title}: Upload complete!`);
+                logProcess(`[Success] Channel "${accountTitle}": Upload complete! Video ID: ${uploadResult.videoId}`);
 
             } catch (err) {
-                console.error(`[Failure] Job ${job.id}:`, err.message);
+                logProcess(`[Error] Job ${job.id} failed: ${err.message}`, 'ERROR');
                 job.status = 'failed';
                 job.error = err.message;
                 writeData('schedules.json', schedules);
+
+                // CRITICAL: Cleanup if failure occurred during or after render
+                if (renderResult && renderResult.path && fs.existsSync(renderResult.path)) {
+                    logProcess(`[Cleanup] Deleting failed render file: ${renderResult.path}`, 'WARN');
+                    try { fs.unlinkSync(renderResult.path); } catch(e) {}
+                }
             }
         }
     });

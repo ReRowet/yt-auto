@@ -225,6 +225,17 @@
                     </table>
                 </div>
             </div>
+            <div class="card" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3>Live System Logs</h3>
+                    <button class="btn secondary small" onclick="loadLogs()">
+                        <i data-lucide="refresh-cw"></i> Refresh Logs
+                    </button>
+                </div>
+                <div id="log-container" style="background: #0d1117; color: #d1d5db; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; height: 180px; overflow-y: auto;">
+                    <!-- Logs injected here -->
+                </div>
+            </div>
         </section>
 
         <!-- AI Settings -->

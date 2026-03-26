@@ -232,6 +232,20 @@ app.get('/api/system-stats', (req, res) => {
     }
 });
 
+// 6. Logs & Diagnostics
+app.get('/api/logs', (req, res) => {
+    const logPath = path.join(__dirname, '..', 'data', 'process.log');
+    if (!fs.existsSync(logPath)) return res.json({ logs: ['No logs found yet.'] });
+    
+    try {
+        const content = fs.readFileSync(logPath, 'utf8');
+        const lines = content.split('\n').filter(l => l.trim() !== '');
+        res.json({ logs: lines.slice(-50).reverse() }); // Last 50 lines, newest first
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`[OK] RE-Publis v2.2.0 running at http://localhost:${PORT}`);
 });

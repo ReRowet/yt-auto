@@ -270,6 +270,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
         } catch (err) { console.error('Global Queue Load Error:', err); }
+        window.loadLogs(); 
+    };
+
+    window.loadLogs = async () => {
+        try {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+            const container = document.getElementById('log-container');
+            if (!container || !data.logs) return;
+
+            container.innerHTML = data.logs.map(log => {
+                let color = '#d1d5db';
+                if (log.includes('[ERROR]')) color = '#ff5555';
+                if (log.includes('[WARN]')) color = '#ffb86c';
+                if (log.includes('[Success]')) color = '#50fa7b';
+                
+                return `<div style="margin-bottom: 4px; color: ${color}; border-bottom: 1px solid #1f242d; padding-bottom: 2px;">${log}</div>`;
+            }).join('');
+        } catch (err) { console.error('Log Load Error:', err); }
     };
 
     window.cancelJob = async (id) => {
