@@ -27,62 +27,91 @@ class AIService {
         this.updateConfig();
 
         const prompt = `
-You are a senior YouTube growth strategist, SEO expert, and viral content specialist.
+You are a senior YouTube growth strategist, CTR optimization expert, and viral content specialist.
 
-Your task is to generate highly optimized YouTube metadata that maximizes:
-- Click-through rate (CTR)
-- Search ranking (SEO)
-- Audience retention relevance
+Your goal is to generate HIGH-PERFORMANCE YouTube metadata that maximizes:
+- Click Through Rate (CTR)
+- Search Ranking (YouTube SEO)
+- Watch Time & Retention Relevance
 
-Video Context:
+VIDEO CONTEXT:
 - Niche: ${niche}
-- Filename/Subject: ${fileName}
-- Reference/Inspiration Title: ${referenceTitle || 'No reference'}
+- Topic/File Name: ${niche}
+- Reference Title (if any): ${referenceTitle || 'None'}
 - Target Country: ${country || 'Global'}
-- YouTube Category ID: ${category || '22'}
+- Category ID: ${category || '22'}
 
-Instructions:
+---
 
-1. Title:
-- Create a highly clickable, emotionally engaging title
-- Use proven viral patterns (curiosity, benefit, emotion, numbers if relevant)
-- Keep it natural (not clickbait spam)
-- Optimize for YouTube SEO using primary keywords
-- Max 60–70 characters if possible
-- Adapt language and tone to the target country
+### 🎯 STRATEGY GUIDELINES:
 
-2. Description:
-- First 2 lines must hook the viewer (important for CTR)
-- Include main keywords naturally (no keyword stuffing)
-- Add a short value proposition (what viewers get)
-- Include a call-to-action (subscribe / comment / like)
-- Add 5–10 relevant hashtags
-- Include localized hashtags for ${country || 'Global'}
-- Make it readable and engaging (not robotic)
+- Prioritize HUMAN psychology over keyword stuffing
+- Use proven viral title structures:
+  • Curiosity gap
+  • Emotional trigger (nostalgia, love, mystery, relaxation)
+  • Clear benefit/outcome
+  • Pattern interrupt (LIVE, Late Night, 24/7, etc.)
 
-3. Tags:
-- Provide 10–15 tags
-- Mix of:
-  - High volume keywords
-  - Long-tail keywords
-  - Niche-specific tags
-- Keep them relevant to the video topic
+- Avoid robotic or repetitive phrasing
+- Make content feel like a "must-click experience"
+- Titles must feel organic, not spammy
 
-4. Cultural Optimization:
-- Adapt wording, tone, and hashtags to ${country || 'Global'}
-- If country is Indonesia → use Bahasa Indonesia + local trends
-- If Global → use neutral English
+---
 
-5. Output Rules:
-- Return ONLY valid JSON
-- No explanation, no extra text
-- Make sure formatting is correct
+### 1. TITLE (CRITICAL FOR CTR)
+- Max 60–70 characters
+- Must include primary keyword naturally
+- Use power words (nostalgic, late night, emotional, timeless, etc.)
+- Add context enhancer (LIVE, Playlist, Radio, Mix, etc. if relevant)
+- Avoid ALL CAPS spam
 
-Output format:
+---
+
+### 2. DESCRIPTION (OPTIMIZED FOR RETENTION + SEO)
+STRUCTURE:
+- Line 1–2: Strong emotional hook (make people feel something)
+- Line 3–5: What viewers will experience / value
+- Middle: Natural keyword placement (SEO without stuffing)
+- CTA: Subscribe / Like / Comment (soft, not aggressive)
+- End: Hashtags
+
+INCLUDE:
+- 5–10 hashtags
+- Mix of global + localized hashtags
+- Relevant keywords woven naturally
+
+---
+
+### 3. TAGS (SEO BOOST)
+- 12–15 tags
+- Mix:
+  • High volume keywords
+  • Long-tail keywords
+  • Niche-specific phrases
+- Avoid irrelevant tags
+
+---
+
+### 4. CULTURAL ADAPTATION
+- If Indonesia → use Bahasa Indonesia + local vibe (e.g. “lagu nostalgia”, “teman malam”, “musik santai”)
+- If Global → use natural fluent English
+- Match tone with audience behavior (chill, romantic, late-night listeners, etc.)
+
+---
+
+### ⚠️ IMPORTANT RULES:
+- DO NOT repeat the same phrases
+- DO NOT overstuff keywords
+- DO NOT sound AI-generated
+- Make it feel like a real viral video
+
+---
+
+### OUTPUT FORMAT (STRICT JSON ONLY):
 {
-    "title": "A highly clickable title here",
-    "description": "A very engaging description here",
-    "tags": ["tag1", "tag2", "tag3"],
+    "title": "...",
+    "description": "...",
+    "tags": ["...", "..."],
     "category": "${category || '22'}"
 }
         `;
@@ -98,8 +127,8 @@ Output format:
         } catch (err) {
             console.error('AI Generation Error:', err.message);
             return {
-                title: (referenceTitle || fileName).replace(/\.[^/.]+$/, "").substring(0, 100),
-                description: `Automatically uploaded video: ${fileName}\nTarget: ${country}`,
+                title: (referenceTitle || niche).replace(/\.[^/.]+$/, "").substring(0, 100),
+                description: `Automatically uploaded video: ${niche}\nTarget: ${country}`,
                 tags: [niche, 'youtube', 'shorts'],
                 category: "22"
             };
@@ -113,13 +142,13 @@ Output format:
                 model: "gemini-3-flash-preview",
                 contents: prompt
             });
-            
+
             const text = result.text;
             if (!text) {
                 console.error('[Gemini] Empty response received.');
                 throw new Error('AI returned empty response');
             }
-            
+
             console.log('[DEBUG] AI Raw Response:', text.substring(0, 100) + '...');
             return this.parseJSON(text);
         } catch (err) {
