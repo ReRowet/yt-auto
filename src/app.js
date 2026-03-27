@@ -150,6 +150,25 @@ app.post('/api/accounts/:id/sync', async (req, res) => {
     }
 });
 
+app.delete('/api/accounts/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        let accounts = readData('accounts.json');
+        const initialLength = accounts.length;
+        accounts = accounts.filter(acc => acc.id !== id);
+
+        if (accounts.length === initialLength) {
+            return res.status(404).json({ error: 'Account not found' });
+        }
+
+        writeData('accounts.json', accounts);
+        console.log(`[API] Account ${id} deleted successfully.`);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 2. Media Management (Per Channel + Metadata)
 app.get('/api/media', (req, res) => {
     const channelId = req.query.channelId || 'global';

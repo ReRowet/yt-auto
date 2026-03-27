@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { readData, writeData } from './json-db.js';
 import { renderVideo } from './render-engine.js';
-import { uploadVideo } from './youtube-uploader.js';
+import { uploadVideo, getChannelInfo } from './youtube-uploader.js';
 import aiService from './ai-service.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -159,6 +159,34 @@ const startScheduler = () => {
                 break;
             }
         }
+    });
+
+    // 2. Periodic Channel Statistics Sync (Every 6 hours)
+    // Runs at minute 0 of hours 0, 6, 12, 18
+    cron.schedule('0 */6 * * *', async () => {
+        logProcess('Starting periodic channel statistics synchronization...');
+        const accounts = readData('accounts.json');
+        
+        for (let i = 0; i < accounts.length; i++) {
+            try {
+                const acc = accounts[i];
+                logProcess(`[Sync] Updating stats for channel: ${acc.title}...`);
+                const latestData = await getChannelInfo(acc.clientId, acc.clientSecret, acc.refreshToken);
+                
+                // Update specific fields to avoid overwriting tokens/ids
+                accounts[i] = {
+                    ...acc,
+                    ...latestData,
+                    lastSync: new Date().toISOString()
+                };
+                
+                writeData('accounts.json', accounts);
+                logProcess(`[Success] Channel "${acc.title}" statistics updated.`);
+            } catch (err) {
+                logProcess(`[Error] Failed to sync stats for channel ${accounts[i].title}: ${err.message}`, 'ERROR');
+            }
+        }
+        logProcess('Periodic channel sync complete.');
     });
 };
 

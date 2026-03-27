@@ -215,8 +215,43 @@ input:focus { border-color: var(--accent); }
 
 /* Grid Channels */
 .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-.channel-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; cursor: pointer; transition: 0.3s; }
+.channel-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border); 
+    border-radius: var(--radius); 
+    padding: 24px; 
+    cursor: pointer; 
+    transition: 0.3s; 
+    position: relative; 
+}
 .channel-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+
+.card-delete-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(248, 81, 73, 0.1);
+    color: #f85149;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+    z-index: 10;
+}
+
+.card-delete-btn:hover {
+    background: #f85149;
+    color: white;
+}
+
+.card-delete-btn i { width: 14px; height: 14px; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+
 .card-profile { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
 .card-profile img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #21262d; }
 .card-profile h3 { font-size: 16px; }

@@ -139,6 +139,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hiddenInput) hiddenInput.click();
     };
 
+    const syncBtn = document.getElementById('btn-sync-channel');
+    if (syncBtn) {
+        syncBtn.onclick = async () => {
+            if (!state.activeChannelId) return;
+            const originalText = syncBtn.innerHTML;
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<i data-lucide="refresh-cw" class="spin"></i> Syncing...';
+            safeCreateIcons();
+
+            try {
+                const res = await apiFetch(`/api/accounts/${state.activeChannelId}/sync`, { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    // Update state.channels
+                    const idx = state.channels.findIndex(c => c.id === state.activeChannelId);
+                    if (idx > -1) state.channels[idx] = data.account;
+                    
+                    // Refresh UI
+                    manageChannel(state.activeChannelId);
+                    alert('Statistics updated successfully!');
+                } else {
+                    alert('Sync failed. Please try again later.');
+                }
+            } catch (err) { console.error(err); }
+            
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = originalText;
+            safeCreateIcons();
+        };
+    }
+
     // --- JSON Import Logic (Secure & Multi-Account) ---
     const triggerJsonBtn = document.getElementById('btn-trigger-json');
     if (triggerJsonBtn) {
@@ -251,6 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         grid.innerHTML = state.channels.map(channel => `
             <div class="channel-card" onclick="manageChannel('${channel.id}')">
+                <div class="card-delete-btn" onclick="deleteAccount(event, '${channel.id}', '${channel.title}')">
+                    <i data-lucide="trash-2"></i>
+                </div>
                 <div class="card-profile">
                     <img src="${channel.profilePic}" alt="Profile">
                     <div class="info">
@@ -265,6 +299,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
+        safeCreateIcons();
+    };
+
+    window.deleteAccount = async (event, id, title) => {
+        event.stopPropagation();
+        if (!confirm(`Are you sure you want to delete the account "${title}"?`)) return;
+
+        try {
+            const res = await apiFetch(`/api/accounts/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('Account deleted successfully.');
+                loadChannels();
+                loadDashboardStats();
+            } else {
+                const err = await res.json();
+                alert('Error: ' + (err.error || 'Failed to delete account'));
+            }
+        } catch (err) { console.error('Delete Account Error:', err); }
     };
 
     const formatNum = (num) => new Intl.NumberFormat().format(num || 0);
@@ -278,6 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('m-channel-title').textContent = channel.title;
         document.getElementById('m-channel-desc').textContent = channel.description ? (channel.description.substring(0, 100) + '...') : 'No description provided.';
         document.getElementById('m-channel-link').href = `https://youtube.com/${channel.customUrl || 'channel/' + channel.id}`;
+        
+        const lastSync = channel.lastSync ? new Date(channel.lastSync).toLocaleString() : 'Never';
+        document.getElementById('m-last-sync').textContent = `Last Sync: ${lastSync}`;
         
         switchTab('channel-manage');
         loadChannelMedia(id);

@@ -121,9 +121,16 @@
                 <div id="manage-channel-header">
                     <h1 id="m-channel-title">Channel Name</h1>
                     <p id="m-channel-desc" class="small text-muted">No description provided.</p>
-                    <a href="#" id="m-channel-link" target="_blank" class="link small">View on YouTube</a>
+                    <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+                        <a href="#" id="m-channel-link" target="_blank" class="link small">View on YouTube</a>
+                        <span class="text-muted small">|</span>
+                        <span id="m-last-sync" class="text-muted small">Last Sync: Never</span>
+                    </div>
                 </div>
                 <div style="display: flex; gap:12px;">
+                    <button class="btn secondary" id="btn-sync-channel">
+                        <i data-lucide="refresh-cw"></i> Sync Stats
+                    </button>
                     <button class="btn secondary" id="btn-back-dashboard">
                         <i data-lucide="arrow-left"></i> Back to Channels
                     </button>
@@ -394,7 +401,7 @@
     <!-- Hidden file input for media upload -->
     <input type="file" id="media-upload-hidden" multiple style="display:none">
 
-    <script src="script.js?v=7"></script>
+    <script src="script.js?v=10"></script>
     <script>lucide.createIcons();</script>
 </body>
 
