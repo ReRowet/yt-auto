@@ -364,24 +364,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         grid.innerHTML = filtered.map(item => {
-            const isSelected = state.currentMediaType === 'images' 
-                ? state.selectedThumbnailFiles.includes(item.name) 
+            const isSelected = state.currentMediaType === 'images'
+                ? state.selectedThumbnailFiles.includes(item.name)
                 : state.selectedMediaFiles.includes(item.name);
 
+            const typeMap = { videos: 'videos', audios: 'audios', images: 'images', rendered: 'rendered' };
+            const folderType = typeMap[state.currentMediaType] || state.currentMediaType;
+
+            let thumbHtml = '';
+            if (state.currentMediaType === 'images') {
+                thumbHtml = `<img src="${item.path}" style="width:100%; height:100%; object-fit:cover; border-radius:4px;">`;
+            } else if (state.currentMediaType === 'videos' || state.currentMediaType === 'rendered') {
+                thumbHtml = `<i data-lucide="play-circle" style="width:36px; height:36px; color:#2c97de;"></i>`;
+            } else {
+                thumbHtml = `<i data-lucide="music" style="width:36px; height:36px; color:#8957e5;"></i>`;
+            }
+
             return `
-                <div class="media-item ${isSelected ? 'selected' : ''}" onclick="toggleSelectMedia('${item.name}')">
-                    <div class="thumb-placeholder">
-                        ${state.currentMediaType === 'images' 
-                            ? `<img src="${item.path}" style="width: 100%; height: 100%; object-fit: cover;">` 
-                            : `<i data-lucide="${state.currentMediaType === 'videos' ? 'video' : 'music'}"></i>`}
+                <div class="media-item ${isSelected ? 'selected' : ''}">
+                    <div class="thumb-placeholder" onclick="previewMedia('${item.path}', '${item.name}', '${state.currentMediaType}')">
+                        ${thumbHtml}
+                        <div class="preview-hover-overlay"><i data-lucide="eye" style="width:20px;height:20px;"></i></div>
                     </div>
-                    <div class="title">${item.name}</div>
+                    <div class="media-item-footer">
+                        <div class="media-select-check ${isSelected ? 'checked' : ''}" onclick="toggleSelectMedia('${item.name}')">
+                            <i data-lucide="check" style="width:12px;height:12px;"></i>
+                        </div>
+                        <div class="title" title="${item.name}">${item.name}</div>
+                        <div class="media-delete-btn" onclick="deleteMedia(event, '${item.name}', '${folderType}')" title="Delete file">
+                            <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                        </div>
+                    </div>
                     <div class="meta">${item.size}</div>
                 </div>
             `;
         }).join('');
         safeCreateIcons();
     };
+
 
     window.toggleSelectMedia = (name) => {
         if (state.currentMediaType === 'images') {
@@ -396,6 +416,77 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGallery();
         updateScheduleCalculations();
     };
+
+    // --- Preview System ---
+    window.previewMedia = (filePath, fileName, mediaType) => {
+        const container = document.getElementById('preview-container');
+        if (!container) return;
+
+        const label = document.querySelector('.preview-label');
+
+        if (mediaType === 'videos' || mediaType === 'rendered') {
+            if (label) label.textContent = 'VIDEO PREVIEW';
+            container.innerHTML = `
+                <video controls autoplay muted style="width:100%; height:100%; object-fit:contain; border-radius:4px;">
+                    <source src="${filePath}" type="video/mp4">
+                    <source src="${filePath}" type="video/webm">
+                    Browser tidak mendukung preview video.
+                </video>`;
+        } else if (mediaType === 'audios') {
+            if (label) label.textContent = 'AUDIO PREVIEW';
+            container.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; gap:12px; padding:16px;">
+                    <i data-lucide="music" style="width:48px; height:48px; color:#8957e5;"></i>
+                    <span style="font-size:12px; color:var(--text-muted); text-align:center; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${fileName}">${fileName}</span>
+                    <audio controls style="width:100%; margin-top:8px;">
+                        <source src="${filePath}" type="audio/mpeg">
+                        <source src="${filePath}" type="audio/ogg">
+                        <source src="${filePath}" type="audio/wav">
+                        Browser tidak mendukung preview audio.
+                    </audio>
+                </div>`;
+            safeCreateIcons();
+        } else if (mediaType === 'images') {
+            if (label) label.textContent = 'THUMBNAIL PREVIEW';
+            container.innerHTML = `
+                <img src="${filePath}" alt="${fileName}" style="width:100%; height:100%; object-fit:contain; border-radius:4px;">`;
+        }
+    };
+
+    // --- Delete Media ---
+    window.deleteMedia = async (event, filename, folderType) => {
+        event.stopPropagation();
+        if (!state.activeChannelId) return;
+        if (!confirm(`Hapus file "${filename}" secara permanen?`)) return;
+
+        try {
+            const params = new URLSearchParams({
+                channelId: state.activeChannelId,
+                type: folderType,
+                filename
+            });
+            const res = await apiFetch(`/api/media?${params}`, { method: 'DELETE' });
+            if (res.ok) {
+                // Remove from state immediately
+                state.media[state.currentMediaType] = state.media[state.currentMediaType].filter(i => i.name !== filename);
+                // Remove from selected if was selected
+                state.selectedMediaFiles = state.selectedMediaFiles.filter(n => n !== filename);
+                state.selectedThumbnailFiles = state.selectedThumbnailFiles.filter(n => n !== filename);
+                renderGallery();
+                updateScheduleCalculations();
+                // Clear preview if it was previewing this file
+                const container = document.getElementById('preview-container');
+                if (container) container.innerHTML = '<div class="no-preview">Select an item to preview</div>';
+            } else {
+                const err = await res.json();
+                alert('Gagal menghapus: ' + (err.error || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error('Delete Media Error:', err);
+            alert('Error: ' + err.message);
+        }
+    };
+
 
     const mediaTabs = document.querySelectorAll('.tab-btn');
     mediaTabs.forEach(btn => {

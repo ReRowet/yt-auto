@@ -185,8 +185,78 @@ h1 { font-size: 28px; margin-bottom: 4px; }
     color: #30363d;
 }
 
-.media-item .title { font-size: 13px; font-weight: 500; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.media-item .meta { font-size: 11px; color: var(--text-muted); }
+.media-item .title { font-size: 13px; font-weight: 500; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.media-item .meta { font-size: 11px; color: var(--text-muted); padding: 2px 4px; }
+
+/* Media Item Footer */
+.media-item-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+    min-width: 0;
+}
+
+/* Preview Hover Overlay */
+.thumb-placeholder { position: relative; }
+.preview-hover-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(44, 151, 222, 0.0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    opacity: 0;
+    transition: 0.2s;
+    color: white;
+}
+.thumb-placeholder:hover .preview-hover-overlay {
+    background: rgba(44, 151, 222, 0.35);
+    opacity: 1;
+}
+.thumb-placeholder:hover { cursor: pointer; }
+
+/* Media Delete Button */
+.media-delete-btn {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: transparent;
+    color: #57606a;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.media-delete-btn:hover { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+
+/* Media Select Check */
+.media-select-check {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    color: transparent;
+    background: #0d1117;
+}
+.media-select-check.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+/* Audio player in preview */
+.preview-box audio { width: 100%; }
+
 
 /* Playlists */
 .playlist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }

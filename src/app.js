@@ -206,6 +206,36 @@ app.post('/api/upload', upload.fields([
     res.json({ success: true, files: req.files });
 });
 
+// DELETE a specific media file
+app.delete('/api/media', (req, res) => {
+    const { channelId, type, filename } = req.query;
+    if (!channelId || !type || !filename) {
+        return res.status(400).json({ error: 'Missing channelId, type, or filename' });
+    }
+
+    // Allowed types to prevent path traversal
+    const allowedTypes = ['videos', 'audios', 'images', 'rendered'];
+    if (!allowedTypes.includes(type)) {
+        return res.status(400).json({ error: 'Invalid media type' });
+    }
+
+    // Prevent path traversal attacks
+    const safeFilename = path.basename(filename);
+    const filePath = path.join(__dirname, '..', 'publis', channelId, type, safeFilename);
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    try {
+        fs.unlinkSync(filePath);
+        console.log(`[API] Deleted media file: ${filePath}`);
+        res.json({ success: true, deleted: safeFilename });
+    } catch (err) {
+        res.status(500).json({ error: `Failed to delete file: ${err.message}` });
+    }
+});
+
 // 3. Settings
 app.get('/api/settings', (req, res) => {
     res.json(readData('settings.json'));
