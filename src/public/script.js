@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentMediaType: 'videos',
         selectedMediaFiles: [],
         selectedThumbnailFiles: [],
-        timeSlots: [{date: new Date().toISOString().split('T')[0], time: "10:00"}]
+        timeSlots: [],
+        searchQuery: ''
     };
 
     const checkAuth = () => {
@@ -106,9 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (tabId === 'channels') loadChannels();
         if (tabId === 'settings') loadSettings();
-        if (tabId === 'add-channel') {
-            // No specific load needed
-        }
     };
 
     let logInterval = null;
@@ -128,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
     };
 
+    // UI Trigger Setup
     const addChannelTop = document.getElementById('btn-add-channel-top');
     if (addChannelTop) addChannelTop.onclick = () => switchTab('add-channel');
 
@@ -139,6 +138,80 @@ document.addEventListener('DOMContentLoaded', () => {
         const hiddenInput = document.getElementById('media-upload-hidden');
         if (hiddenInput) hiddenInput.click();
     };
+
+    // --- JSON Import Logic (Secure & Multi-Account) ---
+    const triggerJsonBtn = document.getElementById('btn-trigger-json');
+    if (triggerJsonBtn) {
+        triggerJsonBtn.onclick = () => {
+            const hiddenInput = document.getElementById('a-json-file-hidden');
+            if (hiddenInput) hiddenInput.click();
+        };
+    }
+
+    const jsonFileInput = document.getElementById('a-json-file-hidden');
+    if (jsonFileInput) {
+        jsonFileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const errorEl = document.getElementById('add-channel-error');
+                if (errorEl) {
+                    errorEl.classList.add('hidden');
+                    errorEl.textContent = '';
+                }
+
+                try {
+                    const data = JSON.parse(event.target.result);
+                    let accountsToAdd = Array.isArray(data) ? data : [data];
+                    
+                    let successCount = 0;
+                    let lastError = null;
+
+                    for (const rawAcc of accountsToAdd) {
+                        const clientId = rawAcc.client_id || rawAcc.clientId;
+                        const clientSecret = rawAcc.client_secret || rawAcc.clientSecret;
+                        const refreshToken = rawAcc.refresh_token || rawAcc.refreshToken;
+
+                        if (!clientId || !clientSecret || !refreshToken) {
+                            lastError = `Missing required fields (client_id, client_secret, refresh_token).`;
+                            continue;
+                        }
+
+                        const res = await apiFetch('/api/accounts', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ clientId, clientSecret, refreshToken })
+                        });
+
+                        if (res.ok) successCount++;
+                        else {
+                            const errBody = await res.json();
+                            lastError = errBody.error || 'Failed to connect account.';
+                        }
+                    }
+
+                    if (successCount > 0) {
+                        alert(`Successfully connected ${successCount} account(s)!`);
+                        switchTab('channels');
+                    } else if (lastError) {
+                        if (errorEl) {
+                            errorEl.textContent = lastError;
+                            errorEl.classList.remove('hidden');
+                        }
+                    }
+                } catch (err) {
+                    if (errorEl) {
+                        errorEl.textContent = 'Failed to parse JSON file.';
+                        errorEl.classList.remove('hidden');
+                    }
+                }
+                e.target.value = ''; // Reset
+            };
+            reader.readAsText(file);
+        };
+    }
 
     // 1. Dashboard & Channels
     const loadDashboardStats = async () => {
@@ -153,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('stat-total-subs').textContent = formatNum(state.channels.reduce((sum, c) => sum + parseInt(c.subscribers || 0), 0));
             document.getElementById('stat-active-jobs').textContent = schedules.filter(j => j.status === 'pending' || j.status === 'processing').length;
             document.getElementById('stat-success-uploads').textContent = schedules.filter(j => j.status === 'completed').length;
-        } catch (err) { console.error('Load Dashboard Stats Error:', err); }
+        } catch (err) { console.error('Dashboard Stats Load Error:', err); }
     };
 
     const loadChannels = async () => {
@@ -161,13 +234,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await apiFetch('/api/accounts');
             state.channels = await res.json();
             renderChannelGrid();
-        } catch (err) { console.error('Load Channels Error:', err); }
+        } catch (err) { console.error('Channels Load Error:', err); }
     };
 
     const renderChannelGrid = () => {
         const grid = document.getElementById('channels-grid');
         if (!grid) return;
         
+        if (state.channels.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1/-1; padding: 60px; text-align: center;">
+                <p class="text-muted">No channels connected yet.</p>
+                <button class="btn primary" onclick="switchTab('add-channel')" style="margin: 20px auto;">Connect Your First Channel</button>
+            </div>`;
+            return;
+        }
+
         grid.innerHTML = state.channels.map(channel => `
             <div class="channel-card" onclick="manageChannel('${channel.id}')">
                 <div class="card-profile">
@@ -188,16 +269,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formatNum = (num) => new Intl.NumberFormat().format(num || 0);
 
-    // 2. Channel Manage logic (Keeping existing functionality)
+    // 2. Channel Management
     window.manageChannel = async (id) => {
         state.activeChannelId = id;
         const channel = state.channels.find(c => c.id === id);
         if (!channel) return;
+
         document.getElementById('m-channel-title').textContent = channel.title;
-        document.getElementById('m-channel-desc').textContent = channel.description ? (channel.description.substring(0, 60) + '...') : 'No description provided.';
+        document.getElementById('m-channel-desc').textContent = channel.description ? (channel.description.substring(0, 100) + '...') : 'No description provided.';
         document.getElementById('m-channel-link').href = `https://youtube.com/${channel.customUrl || 'channel/' + channel.id}`;
+        
         switchTab('channel-manage');
         loadChannelMedia(id);
+        
         state.selectedMediaFiles = [];
         state.selectedThumbnailFiles = [];
         updateScheduleCalculations();
@@ -214,17 +298,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderGallery = () => {
         const grid = document.getElementById('media-grid');
+        if (!grid) return;
+
         const mediaItems = state.media[state.currentMediaType] || [];
-        if (mediaItems.length === 0) {
-            grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted);">Folder is empty.</div>`;
+        const filtered = mediaItems.filter(i => i.name.toLowerCase().includes(state.searchQuery.toLowerCase()));
+
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--text-muted);">No items found.</div>`;
             return;
         }
-        grid.innerHTML = mediaItems.map(item => {
-            const isSelected = state.currentMediaType === 'images' ? state.selectedThumbnailFiles.includes(item.name) : state.selectedMediaFiles.includes(item.name);
+
+        grid.innerHTML = filtered.map(item => {
+            const isSelected = state.currentMediaType === 'images' 
+                ? state.selectedThumbnailFiles.includes(item.name) 
+                : state.selectedMediaFiles.includes(item.name);
+
             return `
                 <div class="media-item ${isSelected ? 'selected' : ''}" onclick="toggleSelectMedia('${item.name}')">
                     <div class="thumb-placeholder">
-                        ${state.currentMediaType === 'images' ? `<img src="${item.path}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i data-lucide="${state.currentMediaType === 'videos' ? 'video' : 'music'}"></i>`}
+                        ${state.currentMediaType === 'images' 
+                            ? `<img src="${item.path}" style="width: 100%; height: 100%; object-fit: cover;">` 
+                            : `<i data-lucide="${state.currentMediaType === 'videos' ? 'video' : 'music'}"></i>`}
                     </div>
                     <div class="title">${item.name}</div>
                     <div class="meta">${item.size}</div>
@@ -235,16 +329,189 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.toggleSelectMedia = (name) => {
-        const list = state.currentMediaType === 'images' ? state.selectedThumbnailFiles : state.selectedMediaFiles;
-        const idx = list.indexOf(name);
-        if (idx > -1) list.splice(idx, 1); else list.push(name);
+        if (state.currentMediaType === 'images') {
+            const idx = state.selectedThumbnailFiles.indexOf(name);
+            if (idx > -1) state.selectedThumbnailFiles.splice(idx, 1);
+            else state.selectedThumbnailFiles.push(name);
+        } else {
+            const idx = state.selectedMediaFiles.indexOf(name);
+            if (idx > -1) state.selectedMediaFiles.splice(idx, 1);
+            else state.selectedMediaFiles.push(name);
+        }
         renderGallery();
         updateScheduleCalculations();
     };
 
-    window.updateScheduleCalculations = () => { /* Logic to show selection summary */ };
+    const mediaTabs = document.querySelectorAll('.tab-btn');
+    mediaTabs.forEach(btn => {
+        btn.onclick = () => {
+            mediaTabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.currentMediaType = btn.getAttribute('data-target').replace('media-', '');
+            document.getElementById('gallery-title').textContent = btn.textContent + ' Gallery';
+            renderGallery();
+        };
+    });
 
-    // 4. System Monitoring
+    const searchInput = document.getElementById('media-search');
+    if (searchInput) {
+        searchInput.oninput = (e) => {
+            state.searchQuery = e.target.value;
+            renderGallery();
+        };
+    }
+
+    // 3. Automation Setup
+    window.updateScheduleCalculations = () => {
+        const preview = document.getElementById('m-slot-preview');
+        if (!preview) return;
+
+        if (state.timeSlots.length === 0) {
+            preview.innerHTML = `<span class="text-muted small">No slots configured.</span>`;
+        } else {
+            preview.innerHTML = state.timeSlots.map((s, idx) => `
+                <div class="slot-pill">
+                    ${s.time} (${s.date.split('-').slice(1).join('/')})
+                    <i data-lucide="x" onclick="removeTimeSlot(${idx})"></i>
+                </div>
+            `).join('');
+            safeCreateIcons();
+        }
+        
+        const btn = document.getElementById('btn-schedule-batch');
+        if (btn) btn.disabled = state.selectedMediaFiles.length === 0 || state.timeSlots.length === 0;
+    };
+
+    window.openScheduleModal = () => {
+        renderModalSlots();
+        document.getElementById('schedule-modal').classList.remove('hidden');
+    };
+    window.closeScheduleModal = () => document.getElementById('schedule-modal').classList.add('hidden');
+
+    const renderModalSlots = () => {
+        const list = document.getElementById('modal-slot-list');
+        list.innerHTML = state.timeSlots.map((s, idx) => `
+            <div class="slot-pill" style="padding: 8px 12px; font-size: 13px;">
+                ${s.date} @ ${s.time}
+                <i data-lucide="trash-2" onclick="removeTimeSlot(${idx}, true)"></i>
+            </div>
+        `).join('');
+        safeCreateIcons();
+    };
+
+    window.addTimeSlot = () => {
+        const date = document.getElementById('new-slot-date').value;
+        const time = document.getElementById('new-slot-time').value;
+        if (!date || !time) return alert('Select date and time');
+        
+        state.timeSlots.push({ date, time });
+        renderModalSlots();
+    };
+
+    window.removeTimeSlot = (idx, inModal = false) => {
+        state.timeSlots.splice(idx, 1);
+        if (inModal) renderModalSlots();
+        updateScheduleCalculations();
+    };
+
+    window.confirmSlots = () => {
+        updateScheduleCalculations();
+        closeScheduleModal();
+    };
+
+    document.getElementById('btn-schedule-batch').onclick = async () => {
+        if (!state.activeChannelId || state.selectedMediaFiles.length === 0 || state.timeSlots.length === 0) {
+            return alert('Incomplete configuration.');
+        }
+
+        const payload = {
+            accountId: state.activeChannelId,
+            videoFiles: state.selectedMediaFiles,
+            thumbnailFiles: state.selectedThumbnailFiles,
+            scheduleTimes: state.timeSlots.slice(0, state.selectedMediaFiles.length).map(s => new Date(`${s.date}T${s.time}`).toISOString()),
+            niche: document.getElementById('m-niche').value,
+            referenceTitle: document.getElementById('m-ref-title').value,
+            targetCountry: document.getElementById('m-country').value,
+            category: document.getElementById('m-category').value,
+            loopCount: parseInt(document.getElementById('m-audio-loops').value) || 1,
+            deleteRaw: document.getElementById('m-delete-raw').checked
+        };
+
+        try {
+            const res = await apiFetch('/api/schedules/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert('Batch production started successfully!');
+                switchTab('automation');
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.error);
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    // 4. Global Queue & Logs
+    const loadGlobalSchedules = async () => {
+        try {
+            const res = await apiFetch('/api/schedules');
+            const schedules = await res.json();
+            const table = document.getElementById('global-queue-table');
+            if (!table) return;
+
+            if (schedules.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" style="padding: 40px; text-align: center; color: var(--text-muted);">Execution queue is empty.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = schedules.reverse().map(job => `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 12px; font-size: 13px;">${job.videoFile}</td>
+                    <td style="padding: 12px; font-size: 13px;">${job.niche || '-'}</td>
+                    <td style="padding: 12px;"><span class="status-badge ${job.status}">${job.status}</span></td>
+                    <td style="padding: 12px; font-family: monospace; font-size: 12px;">${formatCountdown(job.scheduleTime)}</td>
+                    <td style="padding: 12px;"><button class="btn danger small" onclick="cancelJob('${job.id}')">Cancel</button></td>
+                </tr>
+            `).join('');
+        } catch (err) { console.error(err); }
+    };
+
+    const formatCountdown = (isoDate) => {
+        const diff = new Date(isoDate) - new Date();
+        if (diff <= 0) return 'Immediate';
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        return `${h}h ${m}m`;
+    };
+
+    window.loadLogs = async () => {
+        try {
+            const res = await apiFetch('/api/logs');
+            const data = await res.json();
+            const container = document.getElementById('log-container');
+            if (!container || !data.logs) return;
+
+            container.innerHTML = data.logs.map(log => {
+                let color = '#d1d5db';
+                if (log.includes('[ERROR]')) color = '#ff5555';
+                if (log.includes('[Success]')) color = '#50fa7b';
+                if (log.includes('[Upload]')) color = '#2c97de';
+                return `<div style="margin-bottom: 4px; color: ${color}; line-height: 1.4;">${log}</div>`;
+            }).join('');
+        } catch (err) { console.error(err); }
+    };
+
+    window.cancelJob = async (id) => {
+        if (!confirm('Permanently cancel this job and remove from queue?')) return;
+        try {
+            const res = await apiFetch(`/api/schedules/${id}`, { method: 'DELETE' });
+            if (res.ok) loadGlobalSchedules();
+        } catch (err) { console.error(err); }
+    };
+
+    // 5. System Stats
     const startSystemPoller = () => {
         const updateStats = async () => {
             try {
@@ -256,81 +523,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('ram-fill').style.width = data.ram + '%';
                 document.getElementById('disk-label').textContent = `Storage (${data.diskLabel})`;
                 document.getElementById('disk-fill').style.width = data.diskPercent + '%';
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error('Stats Polling Error:', err); }
         };
         updateStats();
         setInterval(updateStats, 8000);
     };
 
-    // 4. Automation Monitor
-    const loadGlobalSchedules = async () => {
-        try {
-            const res = await apiFetch('/api/schedules');
-            const schedules = await res.json();
-            const table = document.getElementById('global-queue-table');
-            if (!table) return;
-            table.innerHTML = schedules.reverse().map(job => `
-                <tr style="border-bottom: 1px solid #1f242d;">
-                    <td style="padding: 12px;">${job.videoFile}</td>
-                    <td style="padding: 12px;">${job.niche || '-'}</td>
-                    <td style="padding: 12px;"><span class="status-badge ${job.status}">${job.status}</span></td>
-                    <td style="padding: 12px;">-</td>
-                    <td style="padding: 12px;"><button class="btn danger small" onclick="cancelJob('${job.id}')">Cancel</button></td>
-                </tr>
-            `).join('');
-        } catch (err) { console.error(err); }
-    };
-
-    window.loadLogs = async () => {
-        try {
-            const res = await apiFetch('/api/logs');
-            const data = await res.json();
-            const container = document.getElementById('log-container');
-            if (!container || !data.logs) return;
-            container.innerHTML = data.logs.map(log => {
-                let color = '#d1d5db';
-                if (log.includes('[ERROR]')) color = '#ff5555';
-                if (log.includes('[Success]')) color = '#50fa7b';
-                return `<div style="margin-bottom: 4px; color: ${color}; font-size: 11px;">${log}</div>`;
-            }).join('');
-        } catch (err) { console.error(err); }
-    };
-
-    window.cancelJob = async (id) => {
-        if (!confirm('Cancel this job?')) return;
-        try {
-            const res = await apiFetch(`/api/schedules/${id}`, { method: 'DELETE' });
-            if (res.ok) loadGlobalSchedules();
-        } catch (err) { console.error(err); }
-    };
-
-    // 5. Batch Scheduling
-    document.getElementById('btn-schedule-batch').onclick = async () => {
-        if (!state.activeChannelId || state.selectedMediaFiles.length === 0) return alert('Selection missing');
-        const payload = {
-            accountId: state.activeChannelId,
-            videoFiles: state.selectedMediaFiles,
-            scheduleTimes: state.timeSlots.slice(0, state.selectedMediaFiles.length).map(s => new Date(s.date + 'T' + s.time).toISOString()),
-            niche: document.getElementById('m-niche').value,
-            targetCountry: document.getElementById('m-country').value,
-            category: document.getElementById('m-category').value,
-            loopCount: parseInt(document.getElementById('m-audio-loops')?.value) || 1,
-            deleteRaw: document.getElementById('m-delete-raw')?.checked
-        };
-        try {
-            const res = await apiFetch('/api/schedules/batch', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                alert('Scheduled successfully!');
-                switchTab('automation');
-            }
-        } catch (err) { console.error(err); }
-    };
-
-    // AI Settings
+    // 6. Settings
     const loadSettings = async () => {
         try {
             const res = await apiFetch('/api/settings');
@@ -338,35 +537,78 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('s-provider').value = state.settings.preferredProvider || 'gemini';
             document.getElementById('s-gemini-key').value = state.settings.geminiApiKey || '';
             document.getElementById('s-groq-key').value = state.settings.groqApiKey || '';
+            
+            toggleProviderFields(state.settings.preferredProvider || 'gemini');
         } catch (err) { console.error(err); }
     };
 
+    const toggleProviderFields = (val) => {
+        document.getElementById('gemini-input-group').classList.toggle('hidden', val !== 'gemini');
+        document.getElementById('groq-input-group').classList.toggle('hidden', val !== 'groq');
+    };
+
+    document.getElementById('s-provider').onchange = (e) => toggleProviderFields(e.target.value);
+
     document.getElementById('settings-form').onsubmit = async (e) => {
         e.preventDefault();
+        const errorEl = document.getElementById('settings-error');
+        const successEl = document.getElementById('settings-success');
+        errorEl.classList.add('hidden');
+        successEl.classList.add('hidden');
+
         const payload = {
             preferredProvider: document.getElementById('s-provider').value,
             geminiApiKey: document.getElementById('s-gemini-key').value,
             groqApiKey: document.getElementById('s-groq-key').value
         };
-        await apiFetch('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        alert('Settings saved');
+
+        try {
+            const res = await apiFetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                successEl.textContent = 'Configuration saved successfully!';
+                successEl.classList.remove('hidden');
+            } else {
+                errorEl.textContent = 'Failed to save settings.';
+                errorEl.classList.remove('hidden');
+            }
+        } catch (err) { console.error(err); }
     };
 
-    // Modal & Other UI helpers (Simplified for brevity but functional)
-    window.openScheduleModal = () => document.getElementById('schedule-modal').classList.remove('hidden');
-    window.closeScheduleModal = () => document.getElementById('schedule-modal').classList.add('hidden');
-    
-    // Initial Load
+    // 7. Media Upload
+    const mediaUploadInput = document.getElementById('media-upload-hidden');
+    if (mediaUploadInput) {
+        mediaUploadInput.onchange = async (e) => {
+            const files = e.target.files;
+            if (!files.length || !state.activeChannelId) return;
+
+            const formData = new FormData();
+            for (let f of files) formData.append(state.currentMediaType.slice(0, -1), f);
+
+            try {
+                const res = await apiFetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'x-channel-id': state.activeChannelId },
+                    body: formData
+                });
+                if (res.ok) {
+                    alert('Upload successful!');
+                    loadChannelMedia(state.activeChannelId);
+                }
+            } catch (err) { console.error('Upload Error:', err); }
+            e.target.value = ''; // Reset
+        };
+    }
+
+    // Initial Bootstrap
     checkAuth();
     switchTab('dashboard');
     startSystemPoller();
     loadSettings();
     safeCreateIcons();
 
-    const refreshLogsBtn = document.getElementById('btn-refresh-logs');
-    if (refreshLogsBtn) refreshLogsBtn.onclick = () => window.loadLogs();
+    window.switchTab = switchTab; // Expose for HTML onclicks
 });
