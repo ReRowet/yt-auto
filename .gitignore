@@ -3,3 +3,4 @@ package-lock.json
 publis/
 data/
 .env
+.cloudflare/
